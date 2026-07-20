@@ -1,0 +1,118 @@
+*{
+    font-family: serif;
+}
+
+.statement-header-container {
+    width: 100%;
+    overflow: hidden;
+}
+
+.organization-details {
+    text-align: center;
+    width: 100%;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.account-details{
+    /*float: right;*/
+}
+
+.organization-details-table-container{
+    display: block;
+    width: auto;
+    float: left;
+    text-align: left;
+}
+
+.organization-details-table{
+    height: auto;
+    border-collapse: collapse;
+    display: inline-table;
+}
+
+.organization-details-table td{
+    padding: 1px;
+}
+
+.organization-logo-container{
+    height: 100%;
+    display: inline-block;
+    float: right;
+}
+
+.organization-logo {
+    width: 150px;
+    height: 120px;
+}
+
+.statement-header1 {
+    font-weight: bold;
+    margin: 0;
+    color: white;
+    background-color: #72BA10;
+    padding-left: 10px;
+    /*background-color: #72BA10;*/
+}
+
+.statement-header2{
+    font-weight: bold;
+    margin: 5px 5px 5px 10px;
+}
+
+.statement-header-account-table{
+    margin-top: 10px;
+    border-collapse: collapse;
+}
+
+.statement-header-account-table tr td{
+    padding: 3px 15px 3px 3px;
+    border-bottom: 1px dashed #72BA10;
+}
+
+.statement-header-account-table-label{
+    color: #4a790a;
+    border-right: 1px solid #72BA10;
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+.statement-header-account-statement{
+    margin-top: 20px;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.statement-header-acc-stmnt-date{
+    width: 20%;
+}
+
+.statement-header-acc-stmnt-description{
+    width: 40%;
+}
+
+.statement-header-acc-stmnt-amount{
+    width: 20%;
+}
+
+.statement-header-acc-stmnt-balance{
+    width: 20%;
+}
+
+.statement-header-account-statement th{
+    text-align: left;
+    color: white;
+    background-color: #72BA10;
+    font-size: 15px;
+    padding: 2px 2px 2px 3px;
+    border-right: 1px solid  white;
+}
+
+.statement-header-account-statement td{
+    padding-left: 3px;
+    border: 1px solid #72BA10;
+}
+
+hr{
+    border: 1px solid #72BA10;
+}

@@ -1,0 +1,105 @@
+{"action":"GET_CHARGES","api_request_id":"e06cf032-04b0-446e-9691-122b532f377b","payload":{"identifier_type":"MSISDN","identifier":"254719551932","account_number":"","charge_action":"CHECK_LOAN_LIMIT","amount":0.0,"transaction_date_time":"2024-11-06 18:19:09"}}
+
+
+
+
+
+
+
+
+//
+deposit request
+
+
+                {
+"action": "DEPOSIT",
+"api_request_id": "df3e7cf5-1e4b-41ef-a22f-e755be665432q",
+"payload": {
+"originator_id": "85d2b49f-13d6-4829-9317-f0044f909e2c",
+"pesa_type": "PESA_IN",
+"action": "C2B",
+"command": "ConfirmTransaction",
+"sensitivity": "NORMAL",
+"charge": "5.0",
+"identifier_type": "MSISDN",
+"identifier": "+254723902802",
+"transaction_initiator_details": {
+"identifier_type": "MSISDN",
+"identifier": "254723902802",
+"account": "254712345678",
+"name": "John Doe",
+"reference": "PAB9IMA0FJ",
+"other_details": ""
+},
+"transaction_source_details": {
+"identifier_type": "MSISDN",
+"identifier": "254712345678",
+"account": "254712345678",
+"name": "John Doe",
+"reference": "PAB9IMA0FJ",
+"other_details": ""
+},
+"transaction_sender_details": {
+"identifier_type": "MSISDN",
+"identifier": "254712345678",
+"account": "254712345678",
+"name": "John Doe",
+"reference": "PAB9IMA0FJ",
+"other_details": ""
+},
+"transaction_receiver_details": {
+"identifier_type": "SHORT_CODE",
+"identifier": "321456",
+"account": "321456",
+"name": "SACCO C2B",
+"reference": "",
+"other_details": ""
+},
+"transaction_beneficiary_details": {
+"identifier_type": "ACCOUNT_NO",
+"identifier": "5000009086000",
+"account": "5000009086000",
+"name": "John Doe",
+"reference": "",
+"other_details": ""
+},
+"amount": 20500.00,
+"transaction_description": " Pay Bill (1234567) From 254712345678",
+"category": "MPESA_C2B_DEPOSIT",
+"source_reference": "PAB9IMA0FJ",
+"request_application": "MPESA_BROKER",
+"source_application": "MPESA_BROKER",
+"transaction_date_time": "2020-01-02 12:34:45"
+}
+}
+
+
+//ift
+
+
+{"action":"IFT_ACCOUNT_TO_ACCOUNT","api_request_id":"1f167705-faa5-43db-aa92-fc2380fca23f","payload":{"originator_id":"d61a90f8-109c-4d40-a1a7-e9f9c59b0f8a","identifier_type":"MSISDN","identifier":"254719551932","source_account":"5000009086000","destination_account":"1110009086","amount":20.0,"transaction_description":"Source A/C: 5000009086000 - Destination A/C: 1110009086","source_reference":"43a068bc-9db6-11ef-bc4b-f2a2b77b3e48","request_application":"USSD","source_application":"MBANKING","transaction_date_time":"2024-11-08 12:46:01"}}
+
+
+
+
+
+{
+  "action": "GET_DIVIDEND_PAYSLIP",
+  "api_request_id": "e06cf032-04b0-446e-9691-122b532f377b",
+  "payload": {
+    "identifier_type": "MSISDN",
+    "identifier": "254719551932",
+    "date": "2024-11-06 18:19:09",
+    "email": ""
+  }
+}
+
+//response
+{
+  "request_status": "SUCCESS",
+  "response_payload": {
+    "reference": "53f4bf31-79fa-40cb-b935-06792911d5b3",
+    "data": "............................................",
+    "date_time": "2020-01-02 12:34:46"
+  }
+}

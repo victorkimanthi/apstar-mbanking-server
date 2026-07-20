@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="lib" level="project" />
+    <orderEntry type="library" name="fasterxml.jackson.core.databind1" level="project" />
+    <orderEntry type="library" name="apache.httpcomponents.client5.httpclient52" level="project" />
+    <orderEntry type="library" name="fasterxml.jackson.core.databind" level="project" />
+    <orderEntry type="library" name="apache.httpcomponents.client5.httpclient5" level="project" />
+    <orderEntry type="library" name="fasterxml.jackson.core.annotations" level="project" />
+    <orderEntry type="library" name="jayway.jsonpath.json.path" level="project" />
+    <orderEntry type="library" name="smp-ancillary-utils-1.5_old" level="project" />
+    <orderEntry type="library" name="MBANKINGServer" level="project" />
+    <orderEntry type="library" name="lib" level="project" />
+  </component>
+</module>

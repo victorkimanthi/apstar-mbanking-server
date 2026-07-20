@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Main-Class: ke.skyworld.lib.mbanking.core.MBANKINGServer
+Class-Path: lib/accessors-smart-2.4.9.jar lib/asm-9.3.jar lib/httpclient5-5.2.1.jar
+ lib/httpcore5-5.2.jar lib/httpcore5-h2-5.2.jar lib/jackson-annotations-2.14.1.jar lib/j
+ son-path-2.8.0.jar lib/json-smart-2.4.10.jar lib/slf4j-api-1.7.36.jar lib/MBANKINGS
+ erver.jar lib/smp-ancillary-utils-1.5.jar
+

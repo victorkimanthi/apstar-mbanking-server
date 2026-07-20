@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="ecfcee9d-c4fc-46cf-bec5-945e6cd7a38a" name="Telepost.77_LIVE">
+        <fileTransfer rootFolder="/usr/share/skyworld/services/servers/mbanking" accessType="SFTP" host="192.168.151.9" port="22" sshConfigId="239bbc9e-fdff-4dcf-b85f-b0913bac1a3e" sshConfig="skyworld@192.168.151.9:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="8b7376af-71db-4e34-8d23-fc7f8daa10cb" name="Telepost Test">
+        <fileTransfer rootFolder="/usr/share/skyworld/services/" accessType="SFTP" host="192.168.0.224" port="22" sshConfigId="6dafe35e-3e1c-470e-b062-4861817a0511" sshConfig="skyworld@192.168.0.224:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="348fe895-3029-4c08-8940-555107cb3b03" name="Apstar .77 Live">
+        <fileTransfer rootFolder="/usr/share/skyworld/services/servers/mbanking" accessType="SFTP" host="192.168.151.77" port="22" sshConfigId="240baef7-19a1-4ee4-92b3-0b34e333f8fa" sshConfig="skyworld@192.168.151.77:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="44e7f71f-714d-460d-900d-128ec1470208" name="Apstar.9 LIVE">
+        <fileTransfer rootFolder="/usr/share/skyworld/services/portals" accessType="SFTP" host="192.168.151.9" port="22" sshConfigId="239bbc9e-fdff-4dcf-b85f-b0913bac1a3e" sshConfig="skyworld@192.168.151.9:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="8cbb0b38-9bb6-405a-bed6-9a5e14532950" name="Apstar .75 Test">
+        <fileTransfer rootFolder="/usr/share/skyworld/services/servers" accessType="SFTP" host="192.168.151.75" port="22" sshConfigId="9cc94a78-0fc2-44a1-98fd-cfa4da39a2d5" sshConfig="collins@192.168.151.75:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

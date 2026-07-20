@@ -1,0 +1,14 @@
+/conf/
+/out/
+navision_conf.xml
+agency_banking_navision_conf.xml!/msg_log_conf.xml
+
+agency_banking_navision_conf.xml
+db.properties
+mbanking_conf.xml
+wapp_conf.xml
+msg_log_conf.xml
+navision_posting_conf.xml
+/notes/ssl/
+lib/*
+*.zip

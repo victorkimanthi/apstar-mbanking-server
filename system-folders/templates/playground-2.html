@@ -1,0 +1,1146 @@
+<!--<!DOCTYPE html>-->
+<!DOCTYPE math PUBLIC "-//W3C//DTD MathML 3.0//EN" "http://www.w3.org/Math/DTD/mathml3/mathml3.dtd">
+
+<html lang="en">
+<head>
+    <title>Account Statement</title>
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+        }
+
+        @page {
+            size: A4 landscape;
+        }
+
+        table.header-details {
+            width: 100%;
+            border: none;
+        }
+
+        table.header-details, .header-details td {
+            border: none;
+        }
+
+        table.employee-details {
+            width: 100%;
+            border: 1px solid #F9DAE5;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .employee-value {
+            font-size: 120%;
+            padding-left: 20px;
+            font-family: monospace;
+        }
+
+        table.earnings-deductions {
+            width: 100%;
+            border: none;
+            border-collapse: collapse;
+        }
+
+        .earnings-deductions .header-row th {
+            /*font-family: Arial, sans-serif;*/
+            font-weight: bold;
+            background-color: #F9DAE5;
+            height: 36px;
+            width: 100%;
+        }
+
+        .earnings-deductions .separator-row th {
+            height: 40px;
+            width: 100%;
+        }
+
+        table.personal-details, .personal-details td {
+            border: none;
+        }
+
+        table.other-details, .other-details td {
+            border: none;
+        }
+
+        table.bank-details, .bank-details td {
+            border: none;
+        }
+
+        table.param-table {
+            width: 100%;
+        }
+
+        .param-table-headers {
+            font-family: Arial, sans-serif;
+        }
+
+        table.param-table, .param-table td, .param-table th {
+            border: none;
+            padding: 2px;
+        }
+
+        table.param-totals-table {
+            width: 100%;
+        }
+
+        table.param-totals-table, .param-totals-table th {
+            border: none;
+            padding: 2px;
+        }
+
+
+        tr.param-totals-row {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            border-top: 1px solid #573A45;
+            border-bottom: 2px solid #573A45;
+            border-bottom-style: dashed;
+        }
+
+        tr.param-totals-row .field-name {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            /*padding-top: 15px;*/
+        }
+
+        tr.param-totals-row .field-value {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            /*padding-top: 15px;*/
+        }
+
+        table.leave-table {
+            border: 1px solid #573A45;
+            width: 100%;
+            border-collapse: collapse;
+
+        }
+
+        table.leave-table .leave-header {
+            font-family: Arial, sans-serif;
+            background-color: #573A45;
+            height: 36px;
+            text-align: left;
+
+        }
+
+        table.leave-table .leave-field-names {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+        }
+
+        table.leave-table td{
+            padding: 5px;
+        }
+
+        table td + td {
+            border-left: 1px solid #F9DAE5;
+        }
+
+        table th + th {
+            border-left: 1px solid #F9DAE5;
+        }
+
+        th.earn-description, td.earn-description {
+            /*width: 200px;*/
+            width: 40%;
+            text-align: left;
+        }
+
+        th.earn-units, td.earn-units {
+            /*width: 75px;*/
+            width: 10%;
+            text-align: left;
+        }
+
+        th.earn-amount, td.earn-amount {
+            /*width: 150px;*/
+            width: 40%;
+            text-align: right;
+        }
+
+
+        th.date, td.date {
+            /*width: 150px;*/
+            width: 10%;
+            text-align: left;
+        }
+
+        th.doc_no, td.doc_no {
+            /*width: 150px;*/
+            width: 15%;
+            text-align: left;
+        }
+
+        th.activity, td.activity {
+            /*width: 150px;*/
+            width: 15%;
+            text-align: left;
+        }
+
+        th.description, td.description {
+            /*width: 150px;*/
+            width: 30%;
+            text-align: left;
+        }
+
+        th.debit, td.debit {
+            /*width: 150px;*/
+            width: 10%;
+            text-align: right;
+        }
+
+        th.credit, td.credit {
+            /*width: 150px;*/
+            width: 10%;
+            text-align: right;
+        }
+
+        th.monthly_con_bal, td.monthly_con_bal {
+            /*width: 150px;*/
+            width: 10%;
+            text-align: right;
+        }
+
+
+        th.value-date, td.value-date {
+            /*width: 150px;*/
+            width: 10%;
+            font-size: 100%;
+            font-family: monospace;
+            text-align: left;
+        }
+
+        th.value-doc_no, td.value-doc_no {
+            /*width: 150px;*/
+            width: 15%;
+            font-size: 90%;
+            font-family: monospace;
+            text-align: left;
+        }
+
+        th.value-activity, td.value-activity {
+            /*width: 150px;*/
+            width: 15%;
+            font-size: 100%;
+            font-family: monospace;
+            text-align: left;
+        }
+
+        th.value-description, td.value-description {
+            /*width: 150px;*/
+            width: 30%;
+            font-size: 90%;
+            font-family: monospace;
+            text-align: left;;
+        }
+
+        th.value-debit, td.value-debit {
+            /*width: 150px;*/
+            width: 10%;
+            font-size: 100%;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        th.value-credit, td.value-credit {
+            /*width: 150px;*/
+            width: 10%;
+            font-size: 100%;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        th.value-monthly_con_bal, td.value-monthly_con_bal {
+            /*width: 150px;*/
+            width: 10%;
+            font-size: 100%;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        th.value-total_monthly_con_bal, td.value-total_monthly_con_bal {
+            /*width: 150px;*/
+            font-weight: bold;
+            width: 33.3%;
+            font-size: 120%;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        th.value-grand-total_monthly_con_bal, td.value-grand-total_monthly_con_bal {
+            /*width: 150px;*/
+            font-weight: bold;
+            width: 33.3%;
+            font-size: 130%;
+            font-family: monospace;
+            text-align: right;
+        }
+
+
+
+        th.ln-credit, td.ln-credit {
+            /*width: 150px;*/
+            font-size: 90%;
+            width: 20%;
+            text-align: right;
+        }
+
+        th.ln-balance, td.ln-balance {
+            /*width: 150px;*/
+            font-size: 90%;
+            width: 20%;
+            text-align: right;
+        }
+
+        th.ln-int-charged, td.ln-int-charged {
+            /*width: 150px;*/
+            font-size: 90%;
+            width: 20%;
+            text-align: right;
+        }
+
+        th.ln-int-paid, td.ln-int-paid {
+            /*width: 150px;*/
+            font-size: 90%;
+            width: 20%;
+            text-align: right;
+        }
+
+        th.ln-int-bal, td.ln-int-bal {
+            /*width: 150px;*/
+            font-size: 90%;
+            width: 20%;
+            text-align: right;
+        }
+
+
+        th.value-ln-credit, td.value-ln-credit {
+            /*width: 150px;*/
+            width: 20%;
+            font-size: 100%;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        th.value-ln-balance, td.value-ln-balance {
+            /*width: 150px;*/
+            width: 20%;
+            font-size: 100%;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        th.value-ln-int-charged, td.value-ln-int-charged {
+            /*width: 150px;*/
+            width: 20%;
+            font-size: 100%;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        th.value-ln-int-paid, td.value-ln-int-paid {
+            /*width: 150px;*/
+            width: 20%;
+            font-size: 100%;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        th.value-ln-int-bal, td.value-ln-int-bal {
+            /*width: 150px;*/
+            width: 20%;
+            font-size: 100%;
+            font-family: monospace;
+            text-align: right;
+        }
+
+
+        /*th.description, td.description {
+          !*width: 200px;*!
+          width: 40%;
+          text-align: left;
+        }*/
+
+        th.units, td.units {
+            /*width: 75px;*/
+            width: 10%;
+            text-align: left;
+        }
+
+        th.amount, td.amount {
+            /*width: 150px;*/
+            width: 25%;
+            text-align: right;
+        }
+
+        th.balance, td.balance {
+            /*width: 150px;*/
+            width: 25%;
+            text-align: right;
+        }
+
+        th.param-columns, td.param-columns {
+            width: 50%;
+            /*border-top: 1px solid black;*/
+        }
+
+        td.param-columns.footer{
+            /*width: 50%;*/
+            border-top: 1px solid #F9DAE5;
+        }
+
+        .statement-header {
+            position: fixed;
+            top: 0;
+        }
+
+        .statement-body {
+        }
+
+        .statement-footer {
+            position: fixed;
+            bottom: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+
+<div>
+    <div class="" >
+        <div style="margin-bottom: 30px">
+            <table style="width: 100%" class="header-details">
+                <tr>
+                    <td style="width: 20%" valign="top">
+                        <img src="data:image/png;base64,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"
+                             style="height: 60px;" alt="Winas SACCO Logo"/>
+                    </td>
+                    <td style="text-align: left;width: 50%" valign="top">
+                        <table style="width: 100%; text-align: center;">
+                            <tr>
+                                <td style="font-size: 20px; font-weight: bold">WINAS SAVINGS AND CREDIT CO-OPERATIVE SOCIETY LTD</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 13px">P.O. BOX 696</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 13px">Embu, Kenya</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 20px; font-weight: bold; padding-top: 10px">Statement of Accounts</td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="text-align: right;width: 30%" valign="top">
+                        <table style="width: 100%; text-align: center;">
+                            <tr>
+                                <td style="font-size: 25px; font-weight: bold; color:  #F1B0C8">ACCOUNT STATEMENT</td>
+                            </tr>
+                            <tr>
+                                <td>JANUARY 2022 TO DECEMBER 2022</td>
+                            </tr>
+                        </table></td>
+                </tr>
+            </table>
+        </div>
+
+
+        <div>
+            <table class="employee-details">
+                <tr>
+                    <td style="width: 40%" valign="top">
+                        <table class="personal-details">
+                            <tr>
+                                <td>Member Name:</td>
+                                <td class="employee-value">DEREK MUTENDE PRINCE</td>
+                            </tr>
+                            <tr>
+                                <td>Member Number:</td>
+                                <td class="employee-value">24234</td>
+                            </tr>
+                            <tr>
+                                <td>A/C Number:</td>
+                                <td class="employee-value">5-05-00003180-00</td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="width: 20%" valign="top">
+                        <table class="other-details">
+
+                        </table>
+                    </td>
+                    <td style="width: 40%" valign="top">
+                        <table class="personal-details">
+                            <tr>
+                                <td>Print Date:</td>
+                                <td class="employee-value">13/03/2023 10:52:49</td>
+                            </tr>
+                            <tr>
+                                <td>Available Balance:</td>
+                                <td class="employee-value">-453.00</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 80%; font-weight: bold; font-style: italic">NB: All amounts are in KShs.</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+
+    <div >
+        <div>
+            <table class="earnings-deductions">
+
+                <tr class="header-row">
+                    <th style="text-align: left">A/C Number: <span class="employee-value">5-05-00003180-00</span> &nbsp;&nbsp;&nbsp; A/C Name: <span class="employee-value">Fosa Deposits</span></th>
+                </tr>
+
+                <tr>
+                    <td>
+                        <table class="param-table">
+                            <!--<thead>-->
+                            <tr class="param-table-headers">
+                                <th class="date">Date</th>
+                                <th class="doc_no">Doc No</th>
+                                <th class="activity">Activity</th>
+                                <th class="description">Description</th>
+                                <th class="debit">Debit</th>
+                                <th class="credit">Credit</th>
+                                <th class="monthly_con_bal">Balance</th>
+                            </tr>
+                            <!--<tbody> -->
+                            <tr>
+                                <td class="value-date">05/02/2022</td>
+                                <td class="value-doc_no">Divd05/02/2022</td>
+                                <td class="value-activity">DIVIDENDS</td>
+                                <td class="value-description">Dividends Yr: 2021 Scheme: SACCO SHARES ( MANDATORY )</td>
+                                <td class="value-debit">0.00</td>
+                                <td class="value-credit">142.00</td>
+                                <td class="value-monthly_con_bal">142.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">04/04/2022</td>
+                                <td class="value-doc_no">887136</td>
+                                <td class="value-activity">SMSCHARGE</td>
+                                <td class="value-description">Dividends Credit Alert 887136</td>
+                                <td class="value-debit">10.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">132.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">26/12/2022</td>
+                                <td class="value-doc_no">PAB9IMZSC4</td>
+                                <td class="value-activity">MPESADEPOSIT</td>
+                                <td class="value-description">Pay Bill (1234567) From 254713000249 PAB9IMZSC4 (DEREK PRINCE MUTENDE) </td>
+                                <td class="value-debit">0.00</td>
+                                <td class="value-credit">150,000.00</td>
+                                <td class="value-monthly_con_bal">150,132.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">26/12/2022</td>
+                                <td class="value-doc_no">PAB9IMZSC5</td>
+                                <td class="value-activity">MPESADEPOSIT</td>
+                                <td class="value-description">Pay Bill (1234567) From 254713000249 PAB9IMZSC5 (DEREK PRINCE MUTENDE) </td>
+                                <td class="value-debit">0.00</td>
+                                <td class="value-credit">150,000.00</td>
+                                <td class="value-monthly_con_bal">300,132.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">26/12/2022</td>
+                                <td class="value-doc_no">df3e7cf5-1e4b-41ef-a22f-64</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-COMMS</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Commission: df3e7cf5-1e4b-41ef-a22f-64</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">300,112.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">26/12/2022</td>
+                                <td class="value-doc_no">df3e7cf5-1e4b-41ef-a22f-63</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-COMMS</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Commission: df3e7cf5-1e4b-41ef-a22f-63</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">300,092.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">26/12/2022</td>
+                                <td class="value-doc_no">df3e7cf5-1e4b-41ef-a22f-64</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-EXCISEDUTY</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Excise Duty: df3e7cf5-1e4b-41ef-a22f-64</td>
+                                <td class="value-debit">4.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">300,088.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">26/12/2022</td>
+                                <td class="value-doc_no">df3e7cf5-1e4b-41ef-a22f-63</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-EXCISEDUTY</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Excise Duty: df3e7cf5-1e4b-41ef-a22f-63</td>
+                                <td class="value-debit">4.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">300,084.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIXGLU5</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-EXCISEDUTY</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Excise Duty: 1IIXGLU5</td>
+                                <td class="value-debit">4.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">300,080.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR956VY67</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: QLR956VY67</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">300,030.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIY8OU5</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-EXCISEDUTY</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Excise Duty: 1IIY8OU5</td>
+                                <td class="value-debit">4.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">300,026.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIZ3AU8</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 1IIZ3AU8</td>
+                                <td class="value-debit">30.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,996.00</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IJ0DNU8</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: 1IJ0DNU8</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,989.05</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IITN7U5</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-EXCISEDUTY</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Excise Duty: 1IITN7U5</td>
+                                <td class="value-debit">4.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,985.05</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR04Y4BRK</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: QLR04Y4BRK</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,935.05</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIVRCU8</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 1IIVRCU8</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,885.05</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR2565C8Q</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 QLR2565C8Q</td>
+                                <td class="value-debit">15.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,870.05</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIVW5U9</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: 1IIVW5U9</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,863.10</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IJ6QIU8</td>
+                                <td class="value-activity">MB_AIRTIME_PUR-EXCISEDUTY</td>
+                                <td class="value-description">MB_AIRTIME_PUR Excise Duty: 1IJ6QIU8</td>
+                                <td class="value-debit">1.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,862.10</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIXGLU12</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: 1IIXGLU12</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,855.15</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IJ7BDU8</td>
+                                <td class="value-activity">MB_AIRTIME_PUR-COMMS</td>
+                                <td class="value-description">MB_AIRTIME_PUR Commission: 1IJ7BDU8</td>
+                                <td class="value-debit">5.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,850.15</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIYG2U8</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: 1IIYG2U8</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,800.15</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IJ0DNU8</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 1IJ0DNU8</td>
+                                <td class="value-debit">25.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,775.15</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1</td>
+                                <td class="value-activity">SMSCHARGE</td>
+                                <td class="value-description">Balance Inquiry SMS to 254713000249 Ref: 1</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,755.15</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR34WO3KP</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: QLR34WO3KP</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,748.20</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIVK0U8</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: 1IIVK0U8</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,698.20</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR64YE69Y</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: QLR64YE69Y</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,648.20</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIVW5U9</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 1IIVW5U9</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,598.20</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IJ6QIU8</td>
+                                <td class="value-activity">MB_AIRTIME_PUR</td>
+                                <td class="value-description">AIRTIME_PURCHASE - Airtime Purchase by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 1IJ6QIU8</td>
+                                <td class="value-debit">10.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,588.20</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIXGLU12</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 1IIXGLU12</td>
+                                <td class="value-debit">10.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,578.20</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR956VY67</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: QLR956VY67</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,571.25</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1</td>
+                                <td class="value-activity">SMSCHARGE</td>
+                                <td class="value-description">Balance Inquiry SMS to 254713000249 Ref: 1</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,551.25</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIZ3AU8</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: 1IIZ3AU8</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,501.25</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIQGFU5</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-COMMS</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Commission: 1IIQGFU5</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,481.25</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR34WO3KP</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 QLR34WO3KP</td>
+                                <td class="value-debit">21.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,460.25</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">2</td>
+                                <td class="value-activity">SMSCHARGE</td>
+                                <td class="value-description">Balance Inquiry SMS to 254713000249 Ref: 2</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,440.25</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR04Y4BRK</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: QLR04Y4BRK</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,433.30</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIVRCU8</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: 1IIVRCU8</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,383.30</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR2565C8Q</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: QLR2565C8Q</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,333.30</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIXGLU5</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-COMMS</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Commission: 1IIXGLU5</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,313.30</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR956VY67</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 QLR956VY67</td>
+                                <td class="value-debit">17.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,296.30</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIY8OU5</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-COMMS</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Commission: 1IIY8OU5</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,276.30</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IJ7BDU8</td>
+                                <td class="value-activity">MB_AIRTIME_PUR-EXCISEDUTY</td>
+                                <td class="value-description">MB_AIRTIME_PUR Excise Duty: 1IJ7BDU8</td>
+                                <td class="value-debit">1.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,275.30</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIYG2U8</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: 1IIYG2U8</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,268.35</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IJ0DNU8</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: 1IJ0DNU8</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,218.35</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IITN7U5</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-COMMS</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Commission: 1IITN7U5</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,198.35</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR04Y4BRK</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 QLR04Y4BRK</td>
+                                <td class="value-debit">23.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,175.35</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIVK0U8</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: 1IIVK0U8</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,168.40</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR64YE69Y</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: QLR64YE69Y</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,161.45</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIVW5U9</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: 1IIVW5U9</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,111.45</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IJ6QIU8</td>
+                                <td class="value-activity">MB_AIRTIME_PUR-COMMS</td>
+                                <td class="value-description">MB_AIRTIME_PUR Commission: 1IJ6QIU8</td>
+                                <td class="value-debit">5.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,106.45</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIXGLU12</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: 1IIXGLU12</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,056.45</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IJ7BDU8</td>
+                                <td class="value-activity">MB_AIRTIME_PUR</td>
+                                <td class="value-description">AIRTIME_PURCHASE - Airtime Purchase by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 1IJ7BDU8</td>
+                                <td class="value-debit">15.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,041.45</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIYG2U8</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 1IIYG2U8</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,021.45</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIZ3AU8</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: 1IIZ3AU8</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,014.50</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIQGFU5</td>
+                                <td class="value-activity">MB_BAL_ENQUIRY-EXCISEDUTY</td>
+                                <td class="value-description">MB_BAL_ENQUIRY Excise Duty: 1IIQGFU5</td>
+                                <td class="value-debit">4.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">299,010.50</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR34WO3KP</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: QLR34WO3KP</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,960.50</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIVK0U8</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by PETER NJOROGE KIRAKU - 254713000249 to 254713000249 1IIVK0U8</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,910.50</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR64YE69Y</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 QLR64YE69Y</td>
+                                <td class="value-debit">15.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,895.50</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">1IIVRCU8</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: 1IIVRCU8</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,888.55</td>
+                            </tr>              <tr>
+                                <td class="value-date">27/12/2022</td>
+                                <td class="value-doc_no">QLR2565C8Q</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: QLR2565C8Q</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,881.60</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">QLS763DDRZ</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 QLS763DDRZ</td>
+                                <td class="value-debit">10.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,871.60</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">QLS08CZLS6</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: QLS08CZLS6</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,864.65</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">1IL02IU10</td>
+                                <td class="value-activity">MB_BANK_TRANSFER-COMMS</td>
+                                <td class="value-description">MB_BANK_TRANSFER Commission: 1IL02IU10</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,844.65</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">QLS08CZLS6</td>
+                                <td class="value-activity">MPESAWITHDR</td>
+                                <td class="value-description">MPESA_WITHDRAWAL - Cash Withdrawal by DEREK PRINCE MUTENDE - 254713000249 to 254713000249 QLS08CZLS6</td>
+                                <td class="value-debit">15.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,829.65</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">1IL01KU13</td>
+                                <td class="value-activity">MB_BANK_TRANSFER-EXCISEDUTY</td>
+                                <td class="value-description">MB_BANK_TRANSFER Excise Duty: 1IL01KU13</td>
+                                <td class="value-debit">4.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,825.65</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">QLS763DDRZ</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: QLS763DDRZ</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,775.65</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">1IL01KU13</td>
+                                <td class="value-activity">MB_BANK_TRANSFER</td>
+                                <td class="value-description">BANK_TRANSFER - B2B Bank transfer to Cooperative Bank A/C 01143588253800 1IL01KU13</td>
+                                <td class="value-debit">100.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,675.65</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">1IL02IU10</td>
+                                <td class="value-activity">MB_BANK_TRANSFER-EXCISEDUTY</td>
+                                <td class="value-description">MB_BANK_TRANSFER Excise Duty: 1IL02IU10</td>
+                                <td class="value-debit">4.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,671.65</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">QLS08CZLS6</td>
+                                <td class="value-activity">MPESAWITHDR-COMMS</td>
+                                <td class="value-description">MPESAWITHDR Commission: QLS08CZLS6</td>
+                                <td class="value-debit">50.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,621.65</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">1IL02IU10</td>
+                                <td class="value-activity">MB_BANK_TRANSFER</td>
+                                <td class="value-description">BANK_TRANSFER - B2B Bank transfer to Cooperative Bank A/C 01143588253800 1IL02IU10</td>
+                                <td class="value-debit">100.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,521.65</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">QLS763DDRZ</td>
+                                <td class="value-activity">MPESAWITHDR-EXCISEDUTY</td>
+                                <td class="value-description">MPESAWITHDR Excise Duty: QLS763DDRZ</td>
+                                <td class="value-debit">6.95</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,514.70</td>
+                            </tr>              <tr>
+                                <td class="value-date">28/12/2022</td>
+                                <td class="value-doc_no">1IL01KU13</td>
+                                <td class="value-activity">MB_BANK_TRANSFER-COMMS</td>
+                                <td class="value-description">MB_BANK_TRANSFER Commission: 1IL01KU13</td>
+                                <td class="value-debit">20.00</td>
+                                <td class="value-credit">0.00</td>
+                                <td class="value-monthly_con_bal">298,494.70</td>
+                            </tr>       <tr class="param-totals-row">
+                                <td class="param-columns footer" colspan="7">
+                                    <table class="param-totals-table">
+                                        <tr>
+                                            <th class="field-name" style="text-align: left; padding-top: 10px; padding-bottom: 10px; border-bottom-style: dashed; border-bottom-color: #9F2854; border-bottom-width: 2px">Total Balance</th>
+                                            <th class="value-grand-total_monthly_con_bal" style="text-align: right; padding-top: 10px; padding-bottom: 10px; border-bottom-style: dashed; border-bottom-color: #9F2854; border-bottom-width: 2px">298,494.70</th>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+
+                        </table>
+                    </td>
+                </tr>
+                <!--End of Earnings and Deductions -->
+
+            </table>
+        </div>
+    </div>
+
+
+    <div class="">
+        <table style="width: 100%; padding-top: 10px" class="header-details">
+            <tr>
+                <td style="text-align: left;width: 100%" valign="top">
+                    <table style="width: 100%; text-align: center;">
+                        <tr>
+                            <td style="float: left; font-style: italic; font-size: 80%; padding-bottom: 20px">For any enquiries, reach out to Winas SACCO Ltd via <a href="tel:+254727436211">0727 436 211</a> <span></span> or visit the nearest branch for assistance.</td>
+                        </tr>
+                        <tr>
+                            <td style="font-size: 20px; font-family: monospace">--------------------</td>
+                        </tr>
+                        <tr>
+                            <td style="font-size: 20px; font-family: monospace">END OF STATEMENT</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,3205 @@
+Documentation()
+
+OnRun()
+
+HandleRequest(Request : Text) : Text
+RequestParser := RequestParser.Parse(FORMAT(Request));
+RequestAction := RequestParser.SelectToken('action').ToString;
+RequestPayload := RequestParser.SelectToken('payload').ToString;
+RequestAPIID := RequestParser.SelectToken('api_request_id').ToString;
+
+CASE RequestAction OF
+  'GET_MEMBER_DETAILS':
+    EXIT(GetMemberDetails(RequestPayload,RequestAPIID));
+  'GET_DEPOSIT_ACCOUNTS':
+    EXIT(GetDepositAccounts(RequestPayload,RequestAPIID));
+  'VALIDATE_ACCOUNT':
+    EXIT(ValidateAccount(RequestPayload,RequestAPIID));
+  'BALANCE_ENQUIRY':
+    EXIT(DepositBalanceEnquiry(RequestPayload,RequestAPIID));
+  'ACCOUNT_MINI_STATEMENT':
+    EXIT(AccountMiniStatement(RequestPayload,RequestAPIID));
+  'ACCOUNT_FULL_STATEMENT':
+    EXIT(AccountFullStatement(RequestPayload,RequestAPIID));
+  'GET_LOAN_TYPES':
+    EXIT(GetLoanTypes(RequestPayload,RequestAPIID));
+  'GET_LOANS_IN_SERVICE':
+    EXIT(GetLoansInService(RequestPayload,RequestAPIID));
+  'LOAN_BALANCE_ENQUIRY':
+    EXIT(LoanBalanceEnquiry(RequestPayload,RequestAPIID));
+  'LOAN_MINI_STATEMENT':
+    EXIT(LoanMiniStatement(RequestPayload,RequestAPIID));
+  'LOAN_FULL_STATEMENT':
+    EXIT(LoanFullStatement(RequestPayload,RequestAPIID));
+  'CHECK_LOAN_LIMIT':
+    EXIT(CheckLoanLimit(RequestPayload,RequestAPIID));
+  'GET_CHARGES':
+    EXIT(GetCharges(RequestPayload,RequestAPIID));
+  'WITHDRAWAL':
+    EXIT(Withdrawal(RequestPayload, RequestAPIID));
+  'WITHDRAWAL_RESULT':
+    EXIT(WithdrawalResult(RequestPayload, RequestAPIID));
+  'DEPOSIT':
+    EXIT(Deposit(RequestPayload,RequestAPIID));
+  'LOAN_APPLICATION':
+    EXIT(ApplyLoan(RequestPayload,RequestAPIID));
+  'IFT_ACCOUNT_TO_ACCOUNT':
+    EXIT(IFTAccountToAccount(RequestPayload,RequestAPIID));
+  'IFT_LOAN_REPAYMENT':
+    EXIT(IFTLoanRepayment(RequestPayload,RequestAPIID));
+  ELSE
+    EXIT(RequestActionNotValid(RequestAction));
+END
+
+LOCAL GetMemberDetails(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+
+JsonTextWriter.WriteStartObject;
+
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+    PrimaryIdentity := '';
+    IF Members."ID No." <> '' THEN BEGIN
+       PrimaryIdentityType := 'NATIONAL_ID';
+       PrimaryIdentity := Members."ID No."
+     END ELSE BEGIN
+       PrimaryIdentityType :='PASSPORT_NO';
+       PrimaryIdentity := Members."Passport No.";
+      END;
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('customer_type');
+      CASE Members."Single Party/Multiple" OF
+         Members."Single Party/Multiple"::Single:
+            JsonTextWriter.WriteValue('INDIVIDUAL');
+         Members."Single Party/Multiple"::Multiple:
+            JsonTextWriter.WriteValue('REPRESENTATIVE');
+         ELSE
+            JsonTextWriter.WriteValue('CORPORATE');
+       END;
+
+    JsonTextWriter.WritePropertyName('identifier_type');
+    JsonTextWriter.WriteValue('CUSTOMER_NO');
+    JsonTextWriter.WritePropertyName('identifier');
+    JsonTextWriter.WriteValue(Members."No.");
+    JsonTextWriter.WritePropertyName('primary_identity_type');
+    JsonTextWriter.WriteValue(PrimaryIdentityType);
+    JsonTextWriter.WritePropertyName('primary_identity_no');
+    JsonTextWriter.WriteValue(PrimaryIdentity);
+    JsonTextWriter.WritePropertyName('title');
+    JsonTextWriter.WriteValue(Members.Salutation);
+    JsonTextWriter.WritePropertyName('full_name');
+    JsonTextWriter.WriteValue(Members.Name);
+    JsonTextWriter.WritePropertyName('gender');
+    JsonTextWriter.WriteValue(FORMAT(Members.Gender));
+    JsonTextWriter.WritePropertyName('date_of_birth');
+    JsonTextWriter.WriteValue(FormatDate(Members."Date of Birth"));
+    JsonTextWriter.WritePropertyName('primary_email_address');
+    JsonTextWriter.WriteValue(Members."E-Mail");
+    JsonTextWriter.WritePropertyName('primary_mobile_number');
+    JsonTextWriter.WriteValue(Members."Mobile Phone No");
+    JsonTextWriter.WritePropertyName('status');
+    JsonTextWriter.WriteValue(FORMAT(Members.Status));
+    JsonTextWriter.WritePropertyName('registration_date');
+    JsonTextWriter.WriteValue(FormatDate(Members."Registration Date"));
+    JsonTextWriter.WritePropertyName('tax_authority');
+    JsonTextWriter.WriteValue('KRA');
+    JsonTextWriter.WritePropertyName('tax_authority_pin_number');
+    JsonTextWriter.WriteValue(Members."P.I.N Number");
+    JsonTextWriter.WritePropertyName('branch_code');
+    JsonTextWriter.WriteValue(Members."Global Dimension 2 Code");
+    JsonTextWriter.WritePropertyName('branch');
+    DimensionValues.RESET;
+    DimensionValues.SETRANGE(Code, Members."Global Dimension 2 Code");
+    IF DimensionValues.FINDFIRST THEN
+      JsonTextWriter.WriteValue(DimensionValues.Name)
+    ELSE
+      JsonTextWriter.WriteValue(Members."Global Dimension 2 Code");
+
+    JsonTextWriter.WritePropertyName('main_savings_account_no');
+    JsonTextWriter.WriteValue(GetMemberFosaAcc(Members));
+    JsonTextWriter.WriteEndObject;
+  END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+  // Close the JsonTextWriter and StringWriter
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL GetDepositAccounts(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+AccountType := JsonObject.SelectToken('account_type').ToString;
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+
+
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+  CASE AccountType OF
+       'FOSA':
+         ProductFact.SETRANGE("Shortcut Dimension 1 Code",'BANKING');
+       'BOSA':
+        ProductFact.SETRANGE("Shortcut Dimension 1 Code",'CREDIT');
+       'WITHDRAWABLE':
+        ProductFact.SETFILTER("Mobile Transaction",'%1|%2',ProductFact."Mobile Transaction"::"Withdrawals Only",ProductFact."Mobile Transaction"::"Deposits & Withdrawals");
+       'DEPOSIT':
+        ProductFact.SETRANGE("Mobile Transaction",ProductFact."Mobile Transaction"::"Deposits Only");
+       'ALL':
+         ProductFact.SETRANGE("Product Class Type",ProductFact."Product Class Type"::Savings);
+      ELSE BEGIN
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('error_message');
+        JsonTextWriter.WriteValue('Account type '+AccountType+' is not valid');
+        JsonTextWriter.WriteEndObject;
+            JsonTextWriter.Close();
+            StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+      END;
+  END;
+       SavingsAccounts.RESET;
+       SavingsAccounts.SETRANGE("Member No.",Members."No.");
+       IF SavingsAccounts.FINDSET THEN BEGIN
+          JsonTextWriter.WritePropertyName('request_status');
+          JsonTextWriter.WriteValue(Status);
+          JsonTextWriter.WritePropertyName('response_payload');
+          JsonTextWriter.WriteStartArray;
+       REPEAT
+          IsWithdrawable := FALSE;
+          IsDepositable := FALSE;
+          ProductFact.SETRANGE("Product ID", SavingsAccounts."Product Type");
+          IF ProductFact.FIND('-') THEN BEGIN
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('account_name');
+          JsonTextWriter.WriteValue(SavingsAccounts."Product Name");
+          JsonTextWriter.WritePropertyName('account_label');
+          JsonTextWriter.WriteValue(SavingsAccounts."Product Name");
+          JsonTextWriter.WritePropertyName('account_number');
+          JsonTextWriter.WriteValue(SavingsAccounts."No.");
+          JsonTextWriter.WritePropertyName('account_type');
+          JsonTextWriter.WriteValue(AccountType);
+          JsonTextWriter.WritePropertyName('account_balance');
+          JsonTextWriter.WriteValue(GetSavingsAccountBalance(SavingsAccounts."No."));
+          JsonTextWriter.WritePropertyName('account_status');
+          JsonTextWriter.WriteValue(UPPERCASE(FORMAT(SavingsAccounts.Status)));
+          JsonTextWriter.WritePropertyName('can_withdraw');
+          IF (ProductFact."Mobile Transaction" = ProductFact."Mobile Transaction"::"Withdrawals Only")
+             OR (ProductFact."Mobile Transaction" = ProductFact."Mobile Transaction"::"Deposits & Withdrawals") THEN BEGIN
+          IsWithdrawable := TRUE;
+          JsonTextWriter.WriteValue('YES');
+          END ELSE
+          JsonTextWriter.WriteValue('NO');
+          JsonTextWriter.WritePropertyName('max_withdrawable_amount');
+          JsonTextWriter.WriteValue(0);
+          JsonTextWriter.WritePropertyName('can_deposit');
+          IF (ProductFact."Mobile Transaction" = ProductFact."Mobile Transaction"::"Deposits Only") THEN BEGIN
+          IsDepositable := TRUE;
+          JsonTextWriter.WriteValue('YES');
+          END ELSE
+          JsonTextWriter.WriteValue('NO');
+
+          JsonTextWriter.WritePropertyName('can_deposit_ift');
+          IF (ProductFact."Mobile Transaction" = ProductFact."Mobile Transaction"::"Deposits Only") THEN BEGIN
+          IsDepositable := TRUE;
+          JsonTextWriter.WriteValue('YES');
+          END ELSE
+          JsonTextWriter.WriteValue('NO');
+
+
+          JsonTextWriter.WritePropertyName('can_withdraw_ift');
+          IF (ProductFact."Mobile Transaction" = ProductFact."Mobile Transaction"::"Deposits & Withdrawals"  ) THEN BEGIN
+          IsDepositable := TRUE;
+          JsonTextWriter.WriteValue('YES');
+          END ELSE
+          JsonTextWriter.WriteValue('NO');
+
+          JsonTextWriter.WritePropertyName('max_deposit_amount');
+          JsonTextWriter.WriteValue(0);
+          JsonTextWriter.WriteEndObject;
+          END;
+          UNTIL SavingsAccounts.NEXT = 0;
+          JsonTextWriter.WriteEndArray;
+
+          END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('SUCCESS');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+           END;
+
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('ERROR');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL ValidateAccount(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+AccountNumber := JsonObject.SelectToken('account_number').ToString;
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+
+
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+  SavingsAccounts.RESET;
+  SavingsAccounts.SETRANGE("Member No.",Members."No.");
+  SavingsAccounts.SETRANGE("No.",AccountNumber);
+  IF SavingsAccounts.FINDFIRST THEN BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('account_name');
+    JsonTextWriter.WriteValue(SavingsAccounts."Product Name");
+    JsonTextWriter.WritePropertyName('account_label');
+    JsonTextWriter.WriteValue(SavingsAccounts."Product Name" + '(' +SavingsAccounts."No." +')');
+    JsonTextWriter.WritePropertyName('account_number');
+    JsonTextWriter.WriteValue(SavingsAccounts."No.");
+    JsonTextWriter.WritePropertyName('account_type');
+    ProductFact.RESET;
+    ProductFact.SETRANGE("Product ID",SavingsAccounts."Product Type");
+    IF ProductFact.FINDFIRST THEN BEGIN
+      IF (ProductFact."Shortcut Dimension 1 Code" = 'BANKING') THEN
+        JsonTextWriter.WriteValue('FOSA')
+      ELSE
+      IF (ProductFact."Shortcut Dimension 1 Code" = 'CREDIT') THEN
+        JsonTextWriter.WriteValue('BOSA')
+       ELSE
+        JsonTextWriter.WriteValue(SavingsAccounts."Product Type");
+      END;
+    JsonTextWriter.WritePropertyName('account_status');
+    JsonTextWriter.WriteValue(UPPERCASE(FORMAT(SavingsAccounts.Status)));
+    JsonTextWriter.WritePropertyName('account_balance');
+    JsonTextWriter.WriteValue(GetSavingsAccountBalance(SavingsAccounts."No."));
+        JsonTextWriter.WritePropertyName('can_deposit');
+    IF (ProductFact."Mobile Transaction" = ProductFact."Mobile Transaction"::"Deposits Only") THEN BEGIN
+          IsDepositable := TRUE;
+          JsonTextWriter.WriteValue('YES');
+          END ELSE
+          JsonTextWriter.WriteValue('NO');
+    JsonTextWriter.WritePropertyName('max_deposit_amount');
+    JsonTextWriter.WriteValue(0);
+    JsonTextWriter.WritePropertyName('member_details');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('full_name');
+    JsonTextWriter.WriteValue(SavingsAccounts.Name);
+    JsonTextWriter.WritePropertyName('mobile_number');
+    JsonTextWriter.WriteValue(SavingsAccounts."Phone No.");
+    JsonTextWriter.WritePropertyName('id_number');
+    JsonTextWriter.WriteValue(SavingsAccounts."ID No.");
+    JsonTextWriter.WriteEndObject;
+     END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('SUCCESS');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+           END
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('ERROR');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL DepositBalanceEnquiry(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+AccountNumber := JsonObject.SelectToken('account_number').ToString;
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+
+
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+  SavingsAccounts.RESET;
+  SavingsAccounts.SETRANGE("Member No.",Members."No.");
+  SavingsAccounts.SETRANGE("No.",AccountNumber);
+  IF SavingsAccounts.FINDFIRST THEN BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('account_name');
+    JsonTextWriter.WriteValue(SavingsAccounts.Name);
+    JsonTextWriter.WritePropertyName('account_label');
+    JsonTextWriter.WriteValue(SavingsAccounts."Product Name" + '(' +SavingsAccounts."No." +')');
+    JsonTextWriter.WritePropertyName('account_number');
+    JsonTextWriter.WriteValue(SavingsAccounts."No.");
+    JsonTextWriter.WritePropertyName('account_type');
+    ProductFact.RESET;
+    ProductFact.SETRANGE("Product ID",SavingsAccounts."Product Type");
+    IF ProductFact.FINDFIRST THEN BEGIN
+      IF (ProductFact."Shortcut Dimension 1 Code" = 'BANKING') THEN
+        JsonTextWriter.WriteValue('FOSA')
+      ELSE
+      IF (ProductFact."Shortcut Dimension 1 Code" = 'CREDIT') THEN
+        JsonTextWriter.WriteValue('BOSA')
+       ELSE
+        JsonTextWriter.WriteValue(SavingsAccounts."Product Type");
+      END;
+    JsonTextWriter.WritePropertyName('account_balance');
+    JsonTextWriter.WriteValue(GetSavingsAccountBalance(SavingsAccounts."No."));
+    JsonTextWriter.WriteEndObject;
+     END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('SUCCESS');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+           END
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('ERROR');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL AccountMiniStatement(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+AccountNumber := JsonObject.SelectToken('account_number').ToString;
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+Number_of_Transactions_str := JsonObject.SelectToken('number_of_transactions').ToString;
+Count := 0;
+EVALUATE(Number_of_Transactions,Number_of_Transactions_str);
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+  SavingsAccounts.RESET;
+  SavingsAccounts.SETRANGE("Member No.",Members."No.");
+  SavingsAccounts.SETRANGE("No.",AccountNumber);
+  IF SavingsAccounts.FINDFIRST THEN BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('account_name');
+    JsonTextWriter.WriteValue(SavingsAccounts."Product Name");
+    JsonTextWriter.WritePropertyName('account_number');
+    JsonTextWriter.WriteValue(SavingsAccounts."No.");
+    JsonTextWriter.WritePropertyName('available_balance');
+    JsonTextWriter.WriteValue(GetSavingsAccountBalance(SavingsAccounts."No."));
+    JsonTextWriter.WritePropertyName('transactions');
+    JsonTextWriter.WriteStartArray;
+    SavingsLedgerEntry.RESET;
+    SavingsLedgerEntry.SETCURRENTKEY("Entry No.");
+    SavingsLedgerEntry.ASCENDING(FALSE);
+    SavingsLedgerEntry.SETRANGE("Customer No.", SavingsAccounts."No.");
+
+    IF SavingsLedgerEntry.FINDSET THEN BEGIN
+        REPEAT
+          Count += 1;
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('transaction_reference');
+          JsonTextWriter.WriteValue(SavingsLedgerEntry."Document No.");
+          JsonTextWriter.WritePropertyName('transaction_date');
+          JsonTextWriter.WriteValue(FormatISODate(SavingsLedgerEntry."Posting Date"));
+          JsonTextWriter.WritePropertyName('transaction_time');
+          JsonTextWriter.WriteValue(FormatISOTime(SavingsLedgerEntry."Posting Time"));
+          JsonTextWriter.WritePropertyName('transaction_amount');
+          IF SavingsLedgerEntry."Amount (LCY)" < 0 THEN
+           JsonTextWriter.WriteValue(ABS(SavingsLedgerEntry."Amount (LCY)")) //credit
+          ELSE
+          JsonTextWriter.WriteValue(SavingsLedgerEntry."Amount (LCY)"); //debit
+
+          JsonTextWriter.WritePropertyName('running_balance');
+          SavingsAccounts.CALCFIELDS("Balance (LCY)");
+          AccBal := SavingsAccounts."Balance (LCY)";
+          JsonTextWriter.WriteValue(AccBal);
+          JsonTextWriter.WritePropertyName('transaction_description');
+          JsonTextWriter.WriteValue(SavingsLedgerEntry.Description);
+          JsonTextWriter.WritePropertyName('other_details');
+          JsonTextWriter.WriteValue(SavingsLedgerEntry.Description);
+          JsonTextWriter.WriteEndObject
+       UNTIL (Count = Number_of_Transactions) OR (SavingsLedgerEntry.NEXT = 0);
+       JsonTextWriter.WriteEndArray;
+       END
+     END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('SUCCESS');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+           END
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('ERROR');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL AccountFullStatement(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+AccountNumber := JsonObject.SelectToken('account_number').ToString;
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+StartDateTime_str := JsonObject.SelectToken('start_date').ToString;
+EndDateTime_str := JsonObject.SelectToken('end_date').ToString;
+
+EVALUATE(StartDateTime,ConvertISOToNavDateTime(StartDateTime_str));
+
+EVALUATE(EndDateTime,ConvertISOToNavDateTime(EndDateTime_str));
+
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+  SavingsAccounts.RESET;
+  SavingsAccounts.SETRANGE("Member No.",Members."No.");
+  SavingsAccounts.SETRANGE("No.",AccountNumber);
+  IF SavingsAccounts.FINDFIRST THEN BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('account_name');
+    JsonTextWriter.WriteValue(SavingsAccounts."Product Name");
+    JsonTextWriter.WritePropertyName('account_number');
+    JsonTextWriter.WriteValue(SavingsAccounts."No.");
+    JsonTextWriter.WritePropertyName('available_balance');
+    JsonTextWriter.WriteValue(GetSavingsAccountBalance(SavingsAccounts."No."));
+    JsonTextWriter.WritePropertyName('transactions');
+    JsonTextWriter.WriteStartArray;
+    SavingsLedgerEntry.RESET;
+    SavingsLedgerEntry.ASCENDING(FALSE);
+    SavingsLedgerEntry.SETCURRENTKEY("Entry No.");
+    SavingsLedgerEntry.SETRANGE("Customer No.", SavingsAccounts."No.");
+    SavingsLedgerEntry.SETFILTER("Posting Date",'%1..%2',DT2DATE(StartDateTime),DT2DATE(EndDateTime));
+    IF SavingsLedgerEntry.FINDSET THEN BEGIN
+        REPEAT
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('transaction_reference');
+          JsonTextWriter.WriteValue(SavingsLedgerEntry."Document No.");
+          JsonTextWriter.WritePropertyName('transaction_date');
+          JsonTextWriter.WriteValue(FormatISODate(SavingsLedgerEntry."Posting Date"));
+          JsonTextWriter.WritePropertyName('transaction_time');
+          JsonTextWriter.WriteValue(FormatISOTime(SavingsLedgerEntry."Posting Time"));
+          JsonTextWriter.WritePropertyName('transaction_amount');
+          IF SavingsLedgerEntry."Amount (LCY)" < 0 THEN
+           JsonTextWriter.WriteValue(ABS(SavingsLedgerEntry."Amount (LCY)")) //credit
+          ELSE
+          JsonTextWriter.WriteValue(SavingsLedgerEntry."Amount (LCY)"); //debit
+          JsonTextWriter.WritePropertyName('running_balance');
+          SavingsAccounts.CALCFIELDS("Balance (LCY)");
+          AccBal := SavingsAccounts."Balance (LCY)";
+          JsonTextWriter.WriteValue(AccBal);
+          JsonTextWriter.WritePropertyName('transaction_description');
+          JsonTextWriter.WriteValue(SavingsLedgerEntry.Description);
+          JsonTextWriter.WritePropertyName('other_details');
+          JsonTextWriter.WriteValue(SavingsLedgerEntry.Description);
+          JsonTextWriter.WriteEndObject
+       UNTIL SavingsLedgerEntry.NEXT = 0;
+       JsonTextWriter.WriteEndArray;
+       END
+     END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('SUCCESS');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+           END
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('ERROR');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL GetLoanTypes(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+
+
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+  ProductFact.RESET;
+  ProductFact.SETRANGE("Product Class Type", ProductFact."Product Class Type"::Loan);
+  ProductFact.SETRANGE(Status, ProductFact.Status::Active);
+  ProductFact.SETRANGE("Mobile Loan", TRUE);
+  IF ProductFact.FINDSET THEN BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartArray;
+    REPEAT
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('loan_type_id');
+    JsonTextWriter.WriteValue(ProductFact."Product ID");
+    JsonTextWriter.WritePropertyName('loan_type_name');
+    JsonTextWriter.WriteValue(ProductFact."Product Description");
+    JsonTextWriter.WritePropertyName('loan_type_min_amount');
+    JsonTextWriter.WriteValue(ProductFact."Minimum Loan Amount");
+    JsonTextWriter.WritePropertyName('loan_type_max_amount');
+    JsonTextWriter.WriteValue(ProductFact."Maximum Loan Amount");
+    JsonTextWriter.WriteEndObject;
+    UNTIL ProductFact.NEXT = 0;
+    JsonTextWriter.WriteEndArray;
+ END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('SUCCESS');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+           END
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('ERROR');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL GetLoansInService(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+
+
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+  MemberLoans.RESET;
+  MemberLoans.SETRANGE("Member No.", Members."No.");
+  MemberLoans.SETAUTOCALCFIELDS("Outstanding Balance","Outstanding Interest");
+  MemberLoans.SETFILTER("Outstanding Balance", '>0');
+  IF MemberLoans.FINDSET THEN BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartArray;
+    REPEAT
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('loan_serial_number');
+    JsonTextWriter.WriteValue(MemberLoans."Loan No.");
+    JsonTextWriter.WritePropertyName('loan_type_id');
+    JsonTextWriter.WriteValue(MemberLoans."Loan Product Type");
+    JsonTextWriter.WritePropertyName('loan_type_name');
+    JsonTextWriter.WriteValue(MemberLoans."Loan Product Type Name");
+    JsonTextWriter.WritePropertyName('loan_amount');
+    JsonTextWriter.WriteValue(MemberLoans."Approved Amount");
+    JsonTextWriter.WritePropertyName('loan_balance');
+    JsonTextWriter.WriteValue(MemberLoans."Outstanding Balance");
+    JsonTextWriter.WritePropertyName('installment_amount');
+    JsonTextWriter.WriteValue(MemberLoans.Repayment);
+    JsonTextWriter.WritePropertyName('interest_amount ');
+    JsonTextWriter.WriteValue(MemberLoans."Outstanding Interest");
+    JsonTextWriter.WritePropertyName('interest_amount');
+    JsonTextWriter.WriteValue(MemberLoans.Interest);
+    JsonTextWriter.WritePropertyName('loan_defaulted_amount');
+    JsonTextWriter.WriteValue(MemberLoans."Outstanding Bills");
+    JsonTextWriter.WritePropertyName('loan_issued_date');
+    JsonTextWriter.WriteValue(FormatISODate(MemberLoans."Disbursement Date"));
+    JsonTextWriter.WritePropertyName('loan_end_date');
+    JsonTextWriter.WriteValue(FormatISODate(MemberLoans."Expected Date of Completion"));
+    JsonTextWriter.WritePropertyName('loan_performance');
+    JsonTextWriter.WriteValue(UPPERCASE(FORMAT(MemberLoans."Loans Category-SASRA")));
+    JsonTextWriter.WritePropertyName('loan_performance_description');
+    JsonTextWriter.WriteValue('Loan is ' + FORMAT(MemberLoans."Loans Category-SASRA"));
+    JsonTextWriter.WriteEndObject;
+    UNTIL MemberLoans.NEXT = 0;
+    JsonTextWriter.WriteEndArray;
+ END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('SUCCESS');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+           END
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('ERROR');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL LoanBalanceEnquiry(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+LoanSerialNo := JsonObject.SelectToken('loan_serial_number').ToString;
+
+
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+  MemberLoans.RESET;
+  MemberLoans.SETRANGE("Member No.", Members."No.");
+  MemberLoans.SETRANGE("Loan No.",LoanSerialNo);
+  MemberLoans.SETAUTOCALCFIELDS("Outstanding Balance","Outstanding Interest");
+  IF MemberLoans.FINDFIRST THEN BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('loan_serial_number');
+    JsonTextWriter.WriteValue(MemberLoans."Loan No.");
+    JsonTextWriter.WritePropertyName('loan_type_name');
+    JsonTextWriter.WriteValue(MemberLoans."Loan Product Type Name");
+    JsonTextWriter.WritePropertyName('account_label');
+    JsonTextWriter.WriteValue(MemberLoans."Loan Product Type Name" + '(' + MemberLoans."Loan No." +')');
+    JsonTextWriter.WritePropertyName('loan_balance');
+    JsonTextWriter.WriteValue(MemberLoans."Outstanding Balance");
+    JsonTextWriter.WritePropertyName('installment_amount');
+    JsonTextWriter.WriteValue(MemberLoans.Repayment);
+    JsonTextWriter.WritePropertyName('interest_amount');
+    JsonTextWriter.WriteValue(MemberLoans."Outstanding Interest");
+    JsonTextWriter.WriteEndObject;
+     END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('SUCCESS');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+           END
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL LoanMiniStatement(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+LoanSerialNo := JsonObject.SelectToken('loan_serial_number').ToString;
+Number_of_Transactions_str := JsonObject.SelectToken('number_of_transactions').ToString;
+Count := 0;
+
+EVALUATE(Number_of_Transactions,Number_of_Transactions_str);
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+  MemberLoans.RESET;
+  MemberLoans.SETRANGE("Member No.",Members."No.");
+  MemberLoans.SETRANGE("Loan No.",LoanSerialNo);
+  MemberLoans.SETAUTOCALCFIELDS("Outstanding Balance","Outstanding Interest");
+  IF MemberLoans.FINDFIRST THEN BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('loan_name');
+    JsonTextWriter.WriteValue(MemberLoans."Loan Product Type Name");
+    JsonTextWriter.WritePropertyName('loan_serial_number');
+    JsonTextWriter.WriteValue(MemberLoans."Loan No.");
+    JsonTextWriter.WritePropertyName('loan_amount');
+    JsonTextWriter.WriteValue(MemberLoans."Approved Amount");
+    JsonTextWriter.WritePropertyName('loan_balance');
+    JsonTextWriter.WriteValue(MemberLoans."Outstanding Balance");
+    JsonTextWriter.WritePropertyName('transactions');
+    JsonTextWriter.WriteStartArray;
+    CreditLedgerEntry.RESET;
+    CreditLedgerEntry.SETCURRENTKEY("Entry No.");
+    CreditLedgerEntry.ASCENDING(FALSE);
+    CreditLedgerEntry.SETRANGE("Loan No", MemberLoans."Loan No.");
+    CreditLedgerEntry.SETFILTER("Transaction Type", '<>%1', CreditLedgerEntry."Transaction Type"::Bills);
+    IF CreditLedgerEntry.FINDSET THEN BEGIN
+        REPEAT
+          Count += 1;
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('transaction_reference');
+          JsonTextWriter.WriteValue(CreditLedgerEntry."Document No.");
+          JsonTextWriter.WritePropertyName('transaction_date');
+          JsonTextWriter.WriteValue(FormatISODate(CreditLedgerEntry."Posting Date"));
+          JsonTextWriter.WritePropertyName('transaction_time');
+          JsonTextWriter.WriteValue(FormatISOTime(CreditLedgerEntry."Posting Time"));
+          JsonTextWriter.WritePropertyName('transaction_amount');
+          IF CreditLedgerEntry.Amount > 0 THEN
+           JsonTextWriter.WriteValue(CreditLedgerEntry.Amount)
+          ELSE
+           JsonTextWriter.WriteValue(ABS(CreditLedgerEntry.Amount));
+
+          JsonTextWriter.WritePropertyName('running_balance');
+          JsonTextWriter.WriteValue(GetLoanRunningBalance(CreditLedgerEntry."Entry No.",MemberLoans."Loan No."));
+          JsonTextWriter.WritePropertyName('transaction_description');
+          JsonTextWriter.WriteValue(CreditLedgerEntry.Description);
+          JsonTextWriter.WritePropertyName('other_details');
+          JsonTextWriter.WriteValue(CreditLedgerEntry.Description);
+          JsonTextWriter.WriteEndObject;
+       UNTIL (Count = Number_of_Transactions) OR (CreditLedgerEntry.NEXT = 0);
+       JsonTextWriter.WriteEndArray;
+       END
+     END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('SUCCESS');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+           END
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('ERROR');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL LoanFullStatement(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+LoanSerialNo := JsonObject.SelectToken('loan_serial_number').ToString;
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+StartDateTime_str := JsonObject.SelectToken('start_date').ToString;
+EndDateTime_str := JsonObject.SelectToken('end_date').ToString;
+
+EVALUATE(StartDateTime,ConvertISOToNavDateTime(StartDateTime_str));
+
+EVALUATE(EndDateTime,ConvertISOToNavDateTime(EndDateTime_str));
+
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+  MemberLoans.RESET;
+  MemberLoans.SETRANGE("Member No.",Members."No.");
+  MemberLoans.SETRANGE("Loan No.",LoanSerialNo);
+  IF MemberLoans.FINDFIRST THEN BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('loan_name');
+    JsonTextWriter.WriteValue(MemberLoans."Loan Product Type Name");
+    JsonTextWriter.WritePropertyName('loan_serial_number');
+    JsonTextWriter.WriteValue(MemberLoans."Loan No.");
+    JsonTextWriter.WritePropertyName('loan_amount');
+    JsonTextWriter.WriteValue(MemberLoans."Approved Amount");
+    JsonTextWriter.WritePropertyName('loan_balance');
+    JsonTextWriter.WriteValue(MemberLoans."Outstanding Balance");
+    JsonTextWriter.WritePropertyName('transactions');
+    JsonTextWriter.WriteStartArray;
+    CreditLedgerEntry.RESET;
+    CreditLedgerEntry.SETCURRENTKEY("Entry No.");
+    CreditLedgerEntry.ASCENDING(FALSE);
+    CreditLedgerEntry.SETRANGE("Loan No", MemberLoans."Loan No.");
+    CreditLedgerEntry.SETFILTER("Transaction Type", '<>%1', CreditLedgerEntry."Transaction Type"::Bills);
+    CreditLedgerEntry.SETFILTER("Posting Date",'%1..%2',DT2DATE(StartDateTime),DT2DATE(EndDateTime));
+    IF CreditLedgerEntry.FINDSET THEN BEGIN
+        REPEAT
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('transaction_reference');
+          JsonTextWriter.WriteValue(CreditLedgerEntry."Document No.");
+          JsonTextWriter.WritePropertyName('transaction_date');
+          JsonTextWriter.WriteValue(FormatISODate(CreditLedgerEntry."Posting Date"));
+          JsonTextWriter.WritePropertyName('transaction_time');
+          JsonTextWriter.WriteValue(FormatISOTime(CreditLedgerEntry."Posting Time"));
+          JsonTextWriter.WritePropertyName('transaction_amount');
+          IF CreditLedgerEntry.Amount > 0 THEN
+           JsonTextWriter.WriteValue(CreditLedgerEntry.Amount)
+          ELSE
+           JsonTextWriter.WriteValue(ABS(CreditLedgerEntry.Amount));
+
+          JsonTextWriter.WritePropertyName('running_balance');
+          JsonTextWriter.WriteValue(GetLoanRunningBalance(CreditLedgerEntry."Entry No.",MemberLoans."Loan No."));
+          JsonTextWriter.WritePropertyName('transaction_description');
+          JsonTextWriter.WriteValue(CreditLedgerEntry.Description);
+          JsonTextWriter.WritePropertyName('other_details');
+          JsonTextWriter.WriteValue(CreditLedgerEntry.Description);
+          JsonTextWriter.WriteEndObject
+       UNTIL CreditLedgerEntry.NEXT = 0;
+       JsonTextWriter.WriteEndArray;
+       END
+     END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('SUCCESS');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+           END
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('ERROR');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL CheckLoanLimit(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+OriginatorID := JsonObject.SelectToken('originator_id').ToString;
+LoanTypeID := JsonObject.SelectToken('loan_type_id').ToString;
+
+JsonTextWriter.WriteStartObject;
+    IF MemberExists(IdentifierType, Identifier, Members, Status, Response) THEN BEGIN
+        MobileLoanProduct.RESET;
+        MobileLoanProduct.SETRANGE("Product ID", LoanTypeID);
+        IF MobileLoanProduct.FINDFIRST THEN BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue(Status);
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('loan_type_id');
+            JsonTextWriter.WriteValue(LoanTypeID);
+            JsonTextWriter.WritePropertyName('loan_name');
+            JsonTextWriter.WriteValue(MobileLoanProduct."Product Description");
+            JsonTextWriter.WritePropertyName('eligible_amount');
+            JsonTextWriter.WriteValue(GetLoanQualifiedAmount(Members."No.", LoanTypeID));
+            JsonTextWriter.WriteEndObject;
+        END ELSE BEGIN
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue(Status);
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartArray;
+            JsonTextWriter.WriteEndArray;
+        END;
+    END ELSE BEGIN
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue(Status);
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('error_message');
+        JsonTextWriter.WriteValue(Response);
+    END;
+    JsonTextWriter.WriteEndObject;
+
+    JsonTextWriter.Close();
+    StringWriter.Close();
+    EXIT(StringBuilder.ToString);
+
+LOCAL GetCharges(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+ChargeAction := JsonObject.SelectToken('charge_action').ToString;
+Amount_str := JsonObject.SelectToken('amount').ToString;
+Account := JsonObject.SelectToken('account_number').ToString;
+
+EVALUATE(Amount,Amount_str);
+JsonTextWriter.WriteStartObject;
+IF MemberExists(IdentifierType,Identifier,Members,Status,Response) THEN BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue(Status);
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('charge_amount');
+    JsonTextWriter.WriteValue(FORMAT(GetTransactionCharges(ChargeAction,Amount)));
+    JsonTextWriter.WriteEndObject;
+ END ELSE BEGIN
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('ERROR');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('error_message');
+    JsonTextWriter.WriteValue(Response);
+  END;
+  JsonTextWriter.WriteEndObject;
+
+JsonTextWriter.Close();
+StringWriter.Close();
+EXIT(StringBuilder.ToString);
+
+LOCAL Withdrawal(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+OriginatorID := JsonObject.SelectToken('originator_id').ToString;
+ProductID := JsonObject.SelectToken('product_id').ToString;
+PesaType := JsonObject.SelectToken('pesa_type').ToString;
+Action := JsonObject.SelectToken('action').ToString;
+Command := JsonObject.SelectToken('pesa_type').ToString;
+
+//Initiator
+transaction_initiator_details_identifier_type := JsonObject.SelectToken('$.transaction_initiator_details.identifier_type').ToString;
+transaction_initiator_details_identifier := JsonObject.SelectToken('$.transaction_initiator_details.identifier').ToString;
+transaction_initiator_details_account := JsonObject.SelectToken('$.transaction_initiator_details.account').ToString;
+transaction_initiator_details_name := JsonObject.SelectToken('$.transaction_initiator_details.name').ToString;
+transaction_initiator_details_reference := JsonObject.SelectToken('$.transaction_initiator_details.reference').ToString;
+transaction_initiator_details_other_details := JsonObject.SelectToken('$.transaction_initiator_details.other_details').ToString;
+
+//Source
+transaction_source_details_identifier_type := JsonObject.SelectToken('$.transaction_source_details.identifier_type').ToString;
+transaction_source_details_identifier := JsonObject.SelectToken('$.transaction_source_details.identifier').ToString;
+transaction_source_details_account := JsonObject.SelectToken('$.transaction_source_details.account').ToString;
+transaction_source_details_name := JsonObject.SelectToken('$.transaction_source_details.name').ToString;
+transaction_source_details_reference := JsonObject.SelectToken('$.transaction_source_details.reference').ToString;
+transaction_source_details_other_details := JsonObject.SelectToken('$.transaction_source_details.other_details').ToString;
+
+// Sender
+transaction_sender_details_identifier_type := JsonObject.SelectToken('$.transaction_sender_details.identifier_type').ToString;
+transaction_sender_details_identifier := JsonObject.SelectToken('$.transaction_sender_details.identifier').ToString;
+transaction_sender_details_account := JsonObject.SelectToken('$.transaction_sender_details.account').ToString;
+transaction_sender_details_name := JsonObject.SelectToken('$.transaction_sender_details.name').ToString;
+transaction_sender_details_reference := JsonObject.SelectToken('$.transaction_sender_details.reference').ToString;
+transaction_sender_details_other_details := JsonObject.SelectToken('$.transaction_sender_details.other_details').ToString;
+
+// Receiver
+transaction_receiver_details_identifier_type := JsonObject.SelectToken('$.transaction_receiver_details.identifier_type').ToString;
+transaction_receiver_details_identifier := JsonObject.SelectToken('$.transaction_receiver_details.identifier').ToString;
+transaction_receiver_details_account := JsonObject.SelectToken('$.transaction_receiver_details.account').ToString;
+transaction_receiver_details_name := JsonObject.SelectToken('$.transaction_receiver_details.name').ToString;
+transaction_receiver_details_reference := JsonObject.SelectToken('$.transaction_receiver_details.reference').ToString;
+transaction_receiver_details_other_details := JsonObject.SelectToken('$.transaction_receiver_details.other_details').ToString;
+
+// Beneficiary
+transaction_beneficiary_details_identifier_type := JsonObject.SelectToken('$.transaction_beneficiary_details.identifier_type').ToString;
+transaction_beneficiary_details_identifier := JsonObject.SelectToken('$.transaction_beneficiary_details.identifier').ToString;
+transaction_beneficiary_details_account := JsonObject.SelectToken('$.transaction_beneficiary_details.account').ToString;
+transaction_beneficiary_details_name := JsonObject.SelectToken('$.transaction_beneficiary_details.name').ToString;
+transaction_beneficiary_details_reference := JsonObject.SelectToken('$.transaction_beneficiary_details.reference').ToString;
+transaction_beneficiary_details_other_details := JsonObject.SelectToken('$.transaction_beneficiary_details.other_details').ToString;
+
+Amount_str := JsonObject.SelectToken('amount').ToString;
+Category := JsonObject.SelectToken('category').ToString;
+SourceRef := JsonObject.SelectToken('source_reference').ToString;
+RequestApplication := JsonObject.SelectToken('request_application').ToString;
+SourceApplication := JsonObject.SelectToken('source_application').ToString;
+TransacDesc := JsonObject.SelectToken('transaction_description').ToString;
+TransactionDateTime_str := JsonObject.SelectToken('transaction_date_time').ToString;
+
+EVALUATE(Amount,Amount_str);
+EVALUATE(TransactionDate,ConvertISOToNavDateTime(TransactionDateTime_str));
+IF NOT MemberExists(transaction_initiator_details_identifier_type, transaction_initiator_details_identifier, Members, Status, Response) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('INVALID_ACCOUNT');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue(Response);
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+END;
+
+IF Amount <= 0 THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Transaction amount must be greater than zero');
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+END;
+
+//// DUPLICATE
+    MobileWithdrawalsBuffer.RESET;
+    MobileWithdrawalsBuffer.SETRANGE("Trace ID",OriginatorID);
+//    ATMTransac.SETRANGE("Account No",transaction_source_details_account);
+//    ATMTransac.SETRANGE(Posted,FALSE);
+//    ATMTransac.SETRANGE(Amount,Amount);
+ IF MobileWithdrawalsBuffer.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('DUPLICATE');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('This transaction already exists. Originator ID = ' + FORMAT(MobileWithdrawalsBuffer."Trace ID"));
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+ END;
+
+SourceSavingsAccount.RESET;
+SourceSavingsAccount.SETRANGE("No.", transaction_source_details_account);
+    IF NOT SourceSavingsAccount.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('INVALID_ACCOUNT');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Account with identifier number ' + transaction_source_details_account + ' does not exist!');
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+      IF SourceSavingsAccount."Member No." <> Members."No." THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('INVALID_ACCOUNT');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Account with identifier number ' + transaction_source_details_account + ' does NOT belong to the given member');
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+// Check if the account is withdrawable
+    ProductFact.RESET;
+    ProductFact.SETRANGE("Product ID", SourceSavingsAccount."Product Type");
+    IF ProductFact.FINDFIRST THEN BEGIN
+        IF (ProductFact."Mobile Transaction" = ProductFact."Mobile Transaction"::" ") AND
+           (ProductFact."Mobile Transaction" <> ProductFact."Mobile Transaction"::"Deposits Only") THEN BEGIN
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('INVALID_ACCOUNT');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('transaction_status_description');
+            JsonTextWriter.WriteValue('Account with identifier number ' + transaction_source_details_account + ' is NOT withdrawable!');
+            JsonTextWriter.WritePropertyName('transaction_date_time');
+            JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+            JsonTextWriter.WriteEndObject;
+            JsonTextWriter.WriteEndObject;
+            JsonTextWriter.Close();
+            StringWriter.Close();
+            EXIT(StringBuilder.ToString);
+        END;
+    END;
+
+IF NOT CheckSavingsAccStatus(transaction_source_details_account) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ACCOUNT_NOT_ACTIVE');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Source account with identifier number ' + transaction_source_details_account + ' is NOT active. Current status is ' + FORMAT(SourceSavingsAccount.Status));
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+IF (SourceSavingsAccount.Blocked = SourceSavingsAccount.Blocked::All)
+   OR (SourceSavingsAccount.Blocked = SourceSavingsAccount.Blocked::Debit) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('BLOCKED');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Account with identifier number ' + transaction_source_details_account + ' is blocked from withdrawal transactions.');
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+END;
+
+ IF ValidateMinAccountBalance(Amount, transaction_source_details_account,Category) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('INSUFFICIENT_BAL');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Account has insufficient balance to complete the transaction.');
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+ END;
+
+ IF NOT CheckWithdrawalTransactionLimit(Amount,transaction_source_details_account,Category,Resp,TransactionDate) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('WITHDRAWAL_LIMIT_VIOLATION');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue(Resp);
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+ END;
+
+    MobileWithdrawalsBuffer.RESET;
+    MobileWithdrawalsBuffer.INIT;
+    MobileWithdrawalsBuffer."Trace ID" := OriginatorID;
+    MobileWithdrawalsBuffer."Posting Date" := DT2DATE(CURRENTDATETIME);
+    MobileWithdrawalsBuffer."Account No" := SourceSavingsAccount."No.";
+    MobileWithdrawalsBuffer.Description := COPYSTR(TransacDesc,1,50);
+    MobileWithdrawalsBuffer.Amount := Amount;
+    MobileWithdrawalsBuffer.Posted  := FALSE;
+    MobileWithdrawalsBuffer."Unit ID" := 'M-PESA';
+    MobileWithdrawalsBuffer."Transaction Type" := 'Withdrawal';
+    MobileWithdrawalsBuffer."Transaction Date" := DT2DATE(TransactionDate);
+    MobileWithdrawalsBuffer."Transaction Time" := DT2TIME(TransactionDate);
+    MobileWithdrawalsBuffer.Source := MobileWithdrawalsBuffer.Source::"M-PESA";
+    CoopSetup.RESET;
+     CASE Category OF
+            'MPESA_WITHDRAWAL':
+                MobileWithdrawalsBuffer."Withdrawal Type" := FORMAT(CoopSetup."Transaction Type"::"Mpesa Withdrawal");
+            'BILL_PAYMENT':
+                MobileWithdrawalsBuffer."Withdrawal Type" := FORMAT(CoopSetup."Transaction Type"::"Utility Payment");
+            'BANK_TRANSFER':
+                MobileWithdrawalsBuffer."Withdrawal Type" := FORMAT(CoopSetup."Transaction Type"::"Bank Transfer");
+            'AIRTIME_PURCHASE':
+                MobileWithdrawalsBuffer."Withdrawal Type" := FORMAT(CoopSetup."Transaction Type"::Airtime);
+        END;
+    MobileWithdrawalsBuffer.INSERT;
+
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('SUCCESS');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('transaction_reference');
+    JsonTextWriter.WriteValue('transaction_reference');
+    JsonTextWriter.WritePropertyName('transaction_status_description');
+    JsonTextWriter.WriteValue('Withdrawal processed successfully');
+    JsonTextWriter.WritePropertyName('transaction_date_time');
+    JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+    JsonTextWriter.WriteEndObject;
+    JsonTextWriter.WriteEndObject;
+    JsonTextWriter.Close();
+    StringWriter.Close();
+    EXIT(StringBuilder.ToString);
+
+LOCAL WithdrawalResult(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+OriginatorID := JsonObject.SelectToken('originator_id').ToString;
+transaction_status := JsonObject.SelectToken('transaction_status').ToString;
+transaction_status_description := JsonObject.SelectToken('transaction_status_description').ToString;
+
+// Beneficiary
+transaction_beneficiary_details_identifier_type := JsonObject.SelectToken('$.transaction_beneficiary_details.identifier_type').ToString;
+transaction_beneficiary_details_identifier := JsonObject.SelectToken('$.transaction_beneficiary_details.identifier').ToString;
+transaction_beneficiary_details_name := JsonObject.SelectToken('$.transaction_beneficiary_details.name').ToString;
+transaction_beneficiary_details_other_details := JsonObject.SelectToken('$.transaction_beneficiary_details.other_details').ToString;
+
+BeneficiaryReference := JsonObject.SelectToken('beneficiary_reference').ToString;
+TransactionDateTime := JsonObject.SelectToken('transaction_date_time').ToString;
+
+IF NOT MemberExists(transaction_beneficiary_details_identifier_type, transaction_beneficiary_details_identifier, Members, Status, Response) THEN BEGIN
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('request_status');
+          JsonTextWriter.WriteValue('SUCCESS');
+          JsonTextWriter.WritePropertyName('response_payload');
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('transaction_status');
+          JsonTextWriter.WriteValue('ERROR');
+          JsonTextWriter.WritePropertyName('transaction_status_description');
+          JsonTextWriter.WriteValue(Response);
+          JsonTextWriter.WritePropertyName('transaction_date_time');
+          JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+          JsonTextWriter.WriteEndObject;
+          JsonTextWriter.WriteEndObject;
+          JsonTextWriter.Close();
+          StringWriter.Close();
+          EXIT(StringBuilder.ToString);
+      END;
+
+    MobileWithdrawalsBuffer.RESET;
+    MobileWithdrawalsBuffer.SETRANGE("Trace ID", OriginatorID);
+    MobileWithdrawalsBuffer.SETRANGE(MobileWithdrawalsBuffer.Source, MobileWithdrawalsBuffer.Source::"M-PESA");
+    IF MobileWithdrawalsBuffer.FINDFIRST THEN BEGIN
+        IF transaction_status = 'CONFIRMED' THEN BEGIN
+            IF MobileWithdrawalsBuffer.Posted = TRUE THEN BEGIN
+                JsonTextWriter.WriteStartObject;
+                JsonTextWriter.WritePropertyName('request_status');
+                JsonTextWriter.WriteValue('SUCCESS');
+                JsonTextWriter.WritePropertyName('response_payload');
+                JsonTextWriter.WriteStartObject;
+                JsonTextWriter.WritePropertyName('transaction_status');
+                JsonTextWriter.WriteValue('DUPLICATE');
+                JsonTextWriter.WritePropertyName('transaction_status_description');
+                JsonTextWriter.WriteValue('Transaction with Originator ID ' + OriginatorID + ' has already been posted');
+                JsonTextWriter.WritePropertyName('transaction_date_time');
+                JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+                JsonTextWriter.WriteEndObject;
+                JsonTextWriter.WriteEndObject;
+
+                JsonTextWriter.Close();
+                StringWriter.Close();
+                EXIT(StringBuilder.ToString);
+            END ELSE BEGIN
+                MobileWithdrawalsBuffer.Posted := TRUE;
+                MobileWithdrawalsBuffer."Posting Date" := TODAY;
+                MobileWithdrawalsBuffer.MODIFY;
+
+                JsonTextWriter.WriteStartObject;
+                JsonTextWriter.WritePropertyName('request_status');
+                JsonTextWriter.WriteValue('SUCCESS');
+                JsonTextWriter.WritePropertyName('response_payload');
+                JsonTextWriter.WriteStartObject;
+                JsonTextWriter.WritePropertyName('transaction_status');
+                JsonTextWriter.WriteValue('SUCCESS');
+                JsonTextWriter.WritePropertyName('transaction_status_description');
+                JsonTextWriter.WriteValue('Result processed successfully');
+                JsonTextWriter.WritePropertyName('transaction_date_time');
+                JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+                JsonTextWriter.WriteEndObject;
+                JsonTextWriter.WriteEndObject;
+
+                JsonTextWriter.Close();
+                StringWriter.Close();
+                EXIT(StringBuilder.ToString);
+            END;
+        END;
+
+        // Check if transaction_status is REVERSE_CONFIRMED
+        IF transaction_status = 'REVERSE_CONFIRMED' THEN BEGIN
+           MobileWithdrawalsBuffer.SETRANGE(Posted,TRUE);
+           MobileWithdrawalsBuffer.SETRANGE(Reversed,TRUE);
+            IF MobileWithdrawalsBuffer.FINDFIRST THEN BEGIN
+                JsonTextWriter.WriteStartObject;
+                JsonTextWriter.WritePropertyName('request_status');
+                JsonTextWriter.WriteValue('SUCCESS');
+                JsonTextWriter.WritePropertyName('response_payload');
+                JsonTextWriter.WriteStartObject;
+                JsonTextWriter.WritePropertyName('transaction_status');
+                JsonTextWriter.WriteValue('ERROR');
+                JsonTextWriter.WritePropertyName('transaction_status_description');
+                JsonTextWriter.WriteValue('Transaction with Originator ID ' + OriginatorID + ' has already been reversed');
+                JsonTextWriter.WritePropertyName('transaction_date_time');
+                JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+                JsonTextWriter.WriteEndObject;
+                JsonTextWriter.WriteEndObject;
+
+                JsonTextWriter.Close();
+                StringWriter.Close();
+                EXIT(StringBuilder.ToString);
+            END ELSE BEGIN
+                // Set reversed to true and modify the record
+                MobileWithdrawalsBuffer.RESET;
+                MobileWithdrawalsBuffer.SETRANGE("Trace ID", OriginatorID);
+                MobileWithdrawalsBuffer.SETRANGE(MobileWithdrawalsBuffer.Source, MobileWithdrawalsBuffer.Source::"M-PESA");
+                MobileWithdrawalsBuffer.SETRANGE(Posted,FALSE);
+                MobileWithdrawalsBuffer.SETRANGE(Reversed,FALSE);
+             IF MobileWithdrawalsBuffer.FINDFIRST THEN BEGIN
+                MobileWithdrawalsBuffer.Posted := TRUE;
+                MobileWithdrawalsBuffer."Posting Date" := TODAY;
+                MobileWithdrawalsBuffer.Reversed := TRUE;
+                MobileWithdrawalsBuffer."Date Reversed" := TODAY;
+                MobileWithdrawalsBuffer.MODIFY;
+
+                JsonTextWriter.WriteStartObject;
+                JsonTextWriter.WritePropertyName('request_status');
+                JsonTextWriter.WriteValue('SUCCESS');
+                JsonTextWriter.WritePropertyName('response_payload');
+                JsonTextWriter.WriteStartObject;
+                JsonTextWriter.WritePropertyName('transaction_status');
+                JsonTextWriter.WriteValue('SUCCESS');
+                JsonTextWriter.WritePropertyName('transaction_status_description');
+                JsonTextWriter.WriteValue('Result processed successfully');
+                JsonTextWriter.WritePropertyName('transaction_date_time');
+                JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+                JsonTextWriter.WriteEndObject;
+                JsonTextWriter.WriteEndObject;
+
+                JsonTextWriter.Close();
+                StringWriter.Close();
+                EXIT(StringBuilder.ToString);
+            END;
+        END;
+      END
+    END ELSE BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('FAILED');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Transaction with Originator ID ' + OriginatorID + ' does not exist!');
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+
+LOCAL Deposit(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+OriginatorID := JsonObject.SelectToken('originator_id').ToString;
+PesaType := JsonObject.SelectToken('pesa_type').ToString;
+Action := JsonObject.SelectToken('action').ToString;
+Command := JsonObject.SelectToken('pesa_type').ToString;
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+//Initiator
+transaction_initiator_details_identifier_type := JsonObject.SelectToken('$.transaction_initiator_details.identifier_type').ToString;
+transaction_initiator_details_identifier := JsonObject.SelectToken('$.transaction_initiator_details.identifier').ToString;
+transaction_initiator_details_account := JsonObject.SelectToken('$.transaction_initiator_details.account').ToString;
+transaction_initiator_details_name := JsonObject.SelectToken('$.transaction_initiator_details.name').ToString;
+transaction_initiator_details_reference := JsonObject.SelectToken('$.transaction_initiator_details.reference').ToString;
+transaction_initiator_details_other_details := JsonObject.SelectToken('$.transaction_initiator_details.other_details').ToString;
+
+//Source
+transaction_source_details_identifier_type := JsonObject.SelectToken('$.transaction_source_details.identifier_type').ToString;
+transaction_source_details_identifier := JsonObject.SelectToken('$.transaction_source_details.identifier').ToString;
+transaction_source_details_account := JsonObject.SelectToken('$.transaction_source_details.account').ToString;
+transaction_source_details_name := JsonObject.SelectToken('$.transaction_source_details.name').ToString;
+transaction_source_details_reference := JsonObject.SelectToken('$.transaction_source_details.reference').ToString;
+transaction_source_details_other_details := JsonObject.SelectToken('$.transaction_source_details.other_details').ToString;
+
+// Sender
+transaction_sender_details_identifier_type := JsonObject.SelectToken('$.transaction_sender_details.identifier_type').ToString;
+transaction_sender_details_identifier := JsonObject.SelectToken('$.transaction_sender_details.identifier').ToString;
+transaction_sender_details_account := JsonObject.SelectToken('$.transaction_sender_details.account').ToString;
+transaction_sender_details_name := JsonObject.SelectToken('$.transaction_sender_details.name').ToString;
+transaction_sender_details_reference := JsonObject.SelectToken('$.transaction_sender_details.reference').ToString;
+transaction_sender_details_other_details := JsonObject.SelectToken('$.transaction_sender_details.other_details').ToString;
+
+// Receiver
+transaction_receiver_details_identifier_type := JsonObject.SelectToken('$.transaction_receiver_details.identifier_type').ToString;
+transaction_receiver_details_identifier := JsonObject.SelectToken('$.transaction_receiver_details.identifier').ToString;
+transaction_receiver_details_account := JsonObject.SelectToken('$.transaction_receiver_details.account').ToString;
+transaction_receiver_details_name := JsonObject.SelectToken('$.transaction_receiver_details.name').ToString;
+transaction_receiver_details_reference := JsonObject.SelectToken('$.transaction_receiver_details.reference').ToString;
+transaction_receiver_details_other_details := JsonObject.SelectToken('$.transaction_receiver_details.other_details').ToString;
+
+// Beneficiary
+transaction_beneficiary_details_identifier_type := JsonObject.SelectToken('$.transaction_beneficiary_details.identifier_type').ToString;
+transaction_beneficiary_details_identifier := JsonObject.SelectToken('$.transaction_beneficiary_details.identifier').ToString;
+transaction_beneficiary_details_account := JsonObject.SelectToken('$.transaction_beneficiary_details.account').ToString;
+transaction_beneficiary_details_name := JsonObject.SelectToken('$.transaction_beneficiary_details.name').ToString;
+transaction_beneficiary_details_reference := JsonObject.SelectToken('$.transaction_beneficiary_details.reference').ToString;
+transaction_beneficiary_details_other_details := JsonObject.SelectToken('$.transaction_beneficiary_details.other_details').ToString;
+
+Amount_str := JsonObject.SelectToken('amount').ToString;
+Category := JsonObject.SelectToken('category').ToString;
+SourceRef := JsonObject.SelectToken('source_reference').ToString;
+RequestApplication := JsonObject.SelectToken('request_application').ToString;
+SourceApplication := JsonObject.SelectToken('source_application').ToString;
+TransacDesc := JsonObject.SelectToken('transaction_description').ToString;
+TransactionDateTime_str := JsonObject.SelectToken('transaction_date_time').ToString;
+
+EVALUATE(Amount,Amount_str);
+EVALUATE(TransactionDate,ConvertISOToNavDateTime(TransactionDateTime_str));
+IF NOT MemberExists(IdentifierType, Identifier, Members, Status, Response) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('INVALID_ACCOUNT');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue(Response);
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+END;
+
+IF Amount <= 0 THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Transaction amount must be greater than zero');
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+END;
+
+//// DUPLICATE
+    MpesaDepositTrans.RESET;
+    MpesaDepositTrans.SETRANGE("Entry No.",OriginatorID);
+ IF MpesaDepositTrans.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('DUPLICATE');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('This transaction already exists. Originator ID = ' + FORMAT(MpesaDepositTrans."Entry No."));
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+ END;
+
+    BeneficiarySavingsAccount.RESET;
+    BeneficiarySavingsAccount.SETRANGE("No.", transaction_beneficiary_details_account);
+    IF NOT BeneficiarySavingsAccount.FINDFIRST THEN BEGIN
+        BeneficiaryLoansAccount.RESET;
+        BeneficiaryLoansAccount.SETRANGE("Loan Account",transaction_beneficiary_details_account);
+        IF NOT BeneficiaryLoansAccount.FINDFIRST THEN BEGIN
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('INVALID_ACCOUNT');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('transaction_status_description');
+            JsonTextWriter.WriteValue('Account with identifier number ' + transaction_beneficiary_details_account + ' does not exist!');
+            JsonTextWriter.WritePropertyName('transaction_date_time');
+            JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+            JsonTextWriter.WriteEndObject;
+            JsonTextWriter.WriteEndObject;
+            JsonTextWriter.Close();
+            StringWriter.Close();
+            EXIT(StringBuilder.ToString);
+        END ELSE BEGIN
+        // Account exists in loan, set IsLoanRepayment to TRUE
+        IsLoanRepayment := TRUE;
+        END;
+        END ELSE BEGIN
+        // Account exists in savings, set IsLoanRepayment to FALSE
+        IsLoanRepayment := FALSE;
+        END;
+
+IF NOT CheckSavingsAccStatus(transaction_beneficiary_details_account) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ACCOUNT_NOT_ACTIVE');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Source account with identifier number ' + transaction_beneficiary_details_account + ' is NOT active. Current status is ' + FORMAT(BeneficiarySavingsAccount.Status));
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+IF (BeneficiarySavingsAccount.Blocked = BeneficiarySavingsAccount.Blocked::All)
+   OR (BeneficiarySavingsAccount.Blocked = BeneficiarySavingsAccount.Blocked::Credit) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('BLOCKED');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Account with identifier number ' + transaction_beneficiary_details_account + ' is blocked from deposit transactions.');
+        JsonTextWriter.WritePropertyName('transaction_date_time');
+        JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+END;
+
+    MpesaDepositTrans.RESET;
+    MpesaDepositTrans.INIT;
+    MpesaDepositTrans."Entry No." := OriginatorID;
+    MpesaDepositTrans."Date Posted":= DT2DATE(CURRENTDATETIME);
+    MpesaDepositTrans."Time Posted" := DT2TIME(CURRENTDATETIME);
+    MpesaDepositTrans."Transaction Date" := DT2DATE(TransactionDate);
+    MpesaDepositTrans."Transaction Time" := DT2TIME(TransactionDate);
+    IF IsLoanRepayment THEN BEGIN
+      BeneficiaryLoansAccount.RESET;
+      BeneficiaryLoansAccount.SETRANGE("Loan Account",transaction_beneficiary_details_account);
+      IF BeneficiaryLoansAccount.FINDFIRST THEN BEGIN
+      MpesaDepositTrans."Member Account":= BeneficiaryLoansAccount."Loan Account";
+      MpesaDepositTrans."Loan No." := BeneficiaryLoansAccount."Loan No.";
+      MpesaDepositTrans."Transaction Type":= MpesaDepositTrans."Transaction Type"::"Pay Loan From Account";
+      MpesaDepositTrans."Transaction Name" := FORMAT(MpesaDepositTrans."Transaction Type"::"Pay Loan From Account");
+      END;
+    END ELSE BEGIN
+      MpesaDepositTrans."Member Account":= BeneficiarySavingsAccount."No.";
+      MpesaDepositTrans."Transaction Type":= MpesaDepositTrans."Transaction Type"::"Mpesa Deposit";
+      MpesaDepositTrans."Transaction Name" := FORMAT(MpesaDepositTrans."Transaction Type"::"Mpesa Deposit");
+    END;
+    MpesaDepositTrans.Description := COPYSTR(TransacDesc,1,50);
+    MpesaDepositTrans.Amount := Amount;
+    MpesaDepositTrans."Source Application" := SourceApplication;
+    MpesaDepositTrans."Request Application" := RequestApplication;
+    MpesaDepositTrans."Session ID" := SourceRef;
+    MpesaDepositTrans."Transaction ID" := SourceRef;
+    MpesaDepositTrans.INSERT;
+
+    IF IsLoanRepayment THEN BEGIN
+       BeneficiaryLoansAccount.RESET;
+       BeneficiaryLoansAccount.SETRANGE("Loan Account",transaction_beneficiary_details_account);
+       IF BeneficiaryLoansAccount.FINDFIRST THEN BEGIN
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('request_status');
+          JsonTextWriter.WriteValue('SUCCESS');
+          JsonTextWriter.WritePropertyName('response_payload');
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('transaction_reference');
+          JsonTextWriter.WriteValue(SourceRef);
+          JsonTextWriter.WritePropertyName('transaction_status_description');
+          JsonTextWriter.WriteValue('Deposit processed successfully');
+          JsonTextWriter.WritePropertyName('transaction_date_time');
+          JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+          JsonTextWriter.WritePropertyName('account_number');
+          JsonTextWriter.WriteValue(BeneficiaryLoansAccount."Loan Account");
+          JsonTextWriter.WritePropertyName('account_name');
+          JsonTextWriter.WriteValue(BeneficiaryLoansAccount."Loan Product Type Name");
+          JsonTextWriter.WritePropertyName('product_type');
+          JsonTextWriter.WriteValue('LOAN');
+          JsonTextWriter.WritePropertyName('account_owner_details');
+          JsonTextWriter.WriteStartObject;
+          Members.RESET;
+          Members.SETRANGE("No.",BeneficiaryLoansAccount."Member No.");
+          IF Members.FINDFIRST THEN BEGIN
+            JsonTextWriter.WritePropertyName('full_name');
+            JsonTextWriter.WriteValue(Members.Name);
+            JsonTextWriter.WritePropertyName('mobile_number');
+            JsonTextWriter.WriteValue(Members."Mobile Phone No");
+            JsonTextWriter.WritePropertyName('id_number');
+            JsonTextWriter.WriteValue(Members."ID No.");
+          END;
+          JsonTextWriter.WriteEndObject;
+          JsonTextWriter.WriteEndObject;
+          JsonTextWriter.WriteEndObject;
+          JsonTextWriter.Close();
+          StringWriter.Close();
+          EXIT(StringBuilder.ToString);
+       END
+    END ELSE BEGIN
+          BeneficiarySavingsAccount.RESET;
+          BeneficiarySavingsAccount.SETRANGE("No.",transaction_beneficiary_details_account);
+      IF BeneficiarySavingsAccount.FINDFIRST THEN BEGIN
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('request_status');
+          JsonTextWriter.WriteValue('SUCCESS');
+          JsonTextWriter.WritePropertyName('response_payload');
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('transaction_reference');
+          JsonTextWriter.WriteValue(SourceRef);
+          JsonTextWriter.WritePropertyName('transaction_status_description');
+          JsonTextWriter.WriteValue('Deposit processed successfully');
+          JsonTextWriter.WritePropertyName('transaction_date_time');
+          JsonTextWriter.WriteValue(FormatISODateTime(CURRENTDATETIME));
+          JsonTextWriter.WritePropertyName('account_number');
+          JsonTextWriter.WriteValue(BeneficiarySavingsAccount."No.");
+          JsonTextWriter.WritePropertyName('account_name');
+          JsonTextWriter.WriteValue(BeneficiarySavingsAccount."Product Name");
+          JsonTextWriter.WritePropertyName('product_type');
+          JsonTextWriter.WriteValue('DEPOSIT');
+          JsonTextWriter.WritePropertyName('account_owner_details');
+          JsonTextWriter.WriteStartObject;
+          Members.RESET;
+          Members.SETRANGE("No.",BeneficiarySavingsAccount."Member No.");
+          IF Members.FINDFIRST THEN BEGIN
+            JsonTextWriter.WritePropertyName('full_name');
+            JsonTextWriter.WriteValue(Members.Name);
+            JsonTextWriter.WritePropertyName('mobile_number');
+            JsonTextWriter.WriteValue(Members."Mobile Phone No");
+            JsonTextWriter.WritePropertyName('id_number');
+            JsonTextWriter.WriteValue(Members."ID No.");
+          END;
+          JsonTextWriter.WriteEndObject;
+          JsonTextWriter.WriteEndObject;
+          JsonTextWriter.WriteEndObject;
+          JsonTextWriter.Close();
+          StringWriter.Close();
+          EXIT(StringBuilder.ToString);
+      END
+    END
+
+
+LOCAL ApplyLoan(Payload : Text;RequestAPIID : Code[150]) : Text
+ StringBuilder := StringBuilder.StringBuilder;
+ StringWriter := StringWriter.StringWriter(StringBuilder);
+ JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+ JsonObject := JsonObject.Parse(FORMAT(Payload));
+ IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+ Identifier := JsonObject.SelectToken('identifier').ToString;
+ OriginatorID := JsonObject.SelectToken('originator_id').ToString;
+ LoanTypeID := JsonObject.SelectToken('loan_type_id').ToString;
+ Amount_str := JsonObject.SelectToken('amount').ToString;
+ SourceReference := JsonObject.SelectToken('source_reference').ToString;
+ RequestApplication := JsonObject.SelectToken('request_application').ToString;
+ TransactionDateTime_str := JsonObject.SelectToken('transaction_date_time').ToString;
+
+ EVALUATE(Amount,Amount_str);
+ EVALUATE(TransactionDateTime,ConvertISOToNavDateTime(TransactionDateTime_str));
+
+  IF NOT MemberExists(IdentifierType, Identifier, Members, Status, Response) THEN BEGIN
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('request_status');
+          JsonTextWriter.WriteValue('ERROR');
+          JsonTextWriter.WritePropertyName('response_payload');
+          JsonTextWriter.WriteStartObject;
+          JsonTextWriter.WritePropertyName('error_message');
+          JsonTextWriter.WriteValue(Response);
+          JsonTextWriter.WriteEndObject;
+          JsonTextWriter.WriteEndObject;
+          JsonTextWriter.Close();
+          StringWriter.Close();
+          EXIT(StringBuilder.ToString);
+      END;
+
+
+    SavingsAccounts.SETRANGE("Member No.", Members."No.");
+    SavingsAccounts.SETRANGE("Product Type", '500');
+    SavingsAccounts.SETFILTER(Status, '<>%1', SavingsAccounts.Status::Deceased);
+
+    IF NOT SavingsAccounts.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('error_message');
+        JsonTextWriter.WriteValue('No savings account found for the member.');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Loan Product Validation
+    MobileLoanProduct.RESET;
+    MobileLoanProduct.SETRANGE("Product ID", LoanTypeID);
+    MobileLoanProduct.SETRANGE("Mobile Loan", TRUE);
+    IF NOT MobileLoanProduct.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('error_message');
+        JsonTextWriter.WriteValue('Loan product with ID = ' + LoanTypeID + ' NOT available for mobile application!');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Check for existing loan applications
+    MobileLoans.RESET;
+    MobileLoans.SETRANGE("Account No", SavingsAccounts."No.");
+    MobileLoans.SETRANGE(Status, MobileLoans.Status::Pending);
+    MobileLoans.SETRANGE("Loan Product Type", LoanTypeID);
+    IF MobileLoans.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('error_message');
+        JsonTextWriter.WriteValue('Loan application already exists for this account.');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Validate Loan Amount against Member Limits
+    IF GetLoanQualifiedAmount(Members."No.", LoanTypeID) < Amount THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('error_message');
+        JsonTextWriter.WriteValue('Loan amount exceeds the maximum limit allowed for the member.');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    IF Amount < MobileLoanProduct."Minimum Loan Amount" THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('error_message');
+        JsonTextWriter.WriteValue('Loan amount is less than the minimum limit allowed for the loan product.');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+     MobileLoans.INIT;
+     MobileLoans."Entry No" := 0;
+     MobileLoans."Account No" := SavingsAccounts."No.";
+     MobileLoans.Date := TransactionDateTime;
+     MobileLoans."Requested Amount" := Amount;
+     MobileLoans.Status := MobileLoans.Status::Pending;
+     MobileLoans."Loan Product Type" := MobileLoanProduct."Product ID";
+     MobileLoans.Amount := Amount;
+     MobileLoans."Entry Code" := CREATEGUID;
+     MobileLoans."Request Application" := RequestApplication;
+     MobileLoans."Date Entered" := TODAY;
+     MobileLoans."Time Entered" := TIME;
+     MobileLoans."Telephone No" := SavingsAccounts."Transactional Mobile No";
+     MobileLoans."Micro Loan" := MobileLoanProduct."Micro Loan";
+
+     //Check for Guarantor Requirements
+    MicroLoanPurpose.RESET;
+    MicroLoanPurpose.SETRANGE("Loan Type", MobileLoanProduct."Product ID");
+    MicroLoanPurpose.SETRANGE("Mobile Based", TRUE);
+    IF MicroLoanPurpose.FINDFIRST THEN BEGIN
+        IF Members.GET(Members."No.") THEN BEGIN
+            IF MicroLoanPurpose."Guarantors Mandatory For" = MicroLoanPurpose."Guarantors Mandatory For"::"Non-Members" THEN
+                IF (Members."Non-Member") AND (NOT Members."Group Account") THEN
+                    MobileLoans."Needs Guarantors" := TRUE;
+
+            IF MicroLoanPurpose."Guarantors Mandatory For" = MicroLoanPurpose."Guarantors Mandatory For"::Groups THEN
+                IF Members."Group Account" THEN
+                    MobileLoans."Needs Guarantors" := TRUE;
+
+            IF MicroLoanPurpose."Guarantors Mandatory For" = MicroLoanPurpose."Guarantors Mandatory For"::"Members & Non-Members" THEN
+                IF NOT Members."Group Account" THEN
+                    MobileLoans."Needs Guarantors" := TRUE;
+
+            IF MicroLoanPurpose."Guarantors Mandatory For" = MicroLoanPurpose."Guarantors Mandatory For"::Members THEN
+                IF (NOT Members."Non-Member") AND (NOT Members."Group Account") THEN
+                    MobileLoans."Needs Guarantors" := TRUE;
+
+            IF MobileLoans."Needs Guarantors" THEN
+                MobileLoans.Status := MobileLoans.Status::"Pending Guarantors";
+        END;
+    END;
+
+    MobileLoans.INSERT;
+
+    // Success Response
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('SUCCESS');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('transaction_reference');
+    JsonTextWriter.WriteValue(SourceReference);
+    JsonTextWriter.WritePropertyName('transaction_status');
+    JsonTextWriter.WriteValue('SUCCESS');
+    JsonTextWriter.WritePropertyName('transaction_status_description');
+    JsonTextWriter.WriteValue('Loan application processed successfully.');
+    JsonTextWriter.WriteEndObject;
+    JsonTextWriter.WriteEndObject;
+    // Close JSON writer objects
+    JsonTextWriter.Close();
+    StringWriter.Close();
+    EXIT(StringBuilder.ToString);
+
+LOCAL IFTAccountToAccount(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+OriginatorID := JsonObject.SelectToken('originator_id').ToString;
+SourceAccount := JsonObject.SelectToken('source_account').ToString;
+DestinationAccount := JsonObject.SelectToken('destination_account').ToString;
+Amount_str := JsonObject.SelectToken('amount').ToString;
+SourceRef := JsonObject.SelectToken('source_reference').ToString;
+RequestApplication := JsonObject.SelectToken('request_application').ToString;
+SourceApplication := JsonObject.SelectToken('source_application').ToString;
+TransactionDescription := JsonObject.SelectToken('transaction_description').ToString;
+TransactionDateTime_str := JsonObject.SelectToken('transaction_date_time').ToString;
+
+EVALUATE(Amount,Amount_str);
+EVALUATE(TransactionDateTime,ConvertISOToNavDateTime(TransactionDateTime_str));
+    IF NOT MemberExists(IdentifierType, Identifier, Members, Status, Response) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue(Response);
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+
+    // Validations
+    IF Amount <= 0 THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Transaction amount must be greater than zero');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    IF SourceAccount = DestinationAccount THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Source account and destination account must be different');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    //// DUPLICATE / IFT_REQUEST_EXISTS
+    MpesaTrans.RESET;
+    MpesaTrans.SETRANGE("Entry No.",OriginatorID);
+      IF MpesaTrans.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('IFT_REQUEST_EXISTS');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('This transaction already exists. Originator ID = ' + FORMAT(MpesaTrans."Entry No."));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+    // Validate source account existence
+
+    SourceSavingsAccount.RESET;
+    SourceSavingsAccount.SETRANGE("No.", SourceAccount);
+    IF NOT SourceSavingsAccount.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ACCOUNT_NOT_FOUND');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Source account with identifier number ' + SourceAccount + ' does not exist!');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    IF SourceSavingsAccount."Member No." <> Members."No." THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ACCOUNT_NOT_FOUND');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Account with identifier number ' + SourceAccount + ' does NOT belong to the given member');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+    // Check if the account is withdrawable
+    SavingsProduct.RESET;
+    SavingsProduct.SETRANGE("Product ID", SourceSavingsAccount."Product Type");
+    IF SavingsProduct.FINDFIRST THEN BEGIN
+        IF (SavingsProduct."Mobile Transaction" = SavingsProduct."Mobile Transaction"::" ") AND
+           (SavingsProduct."Mobile Transaction" <> SavingsProduct."Mobile Transaction"::"Deposits Only") THEN BEGIN
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('ERROR');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('transaction_status');
+            JsonTextWriter.WriteValue('ERROR');
+            JsonTextWriter.WritePropertyName('transaction_status_description');
+            JsonTextWriter.WriteValue('Source account with identifier number ' + SourceAccount + ' is NOT withdrawable!');
+            JsonTextWriter.WriteEndObject;
+            JsonTextWriter.WriteEndObject;
+            JsonTextWriter.Close();
+            StringWriter.Close();
+            EXIT(StringBuilder.ToString);
+        END;
+    END;
+
+    // Check account status
+    IF NOT CheckSavingsAccStatus(SourceAccount) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Source account with identifier number ' + SourceAccount + ' is NOT active. Current status is ' + FORMAT(SourceSavingsAccount.Status));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Validate minimum account balance
+    IF ValidateMinAccountBalance(Amount, SourceAccount,RequestAction) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('INSUFFICIENT_BAL');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Account has insufficient balance to complete the transaction.');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Validate destination account
+    DestinationSavingsAccount.RESET;
+    DestinationSavingsAccount.SETRANGE("No.", DestinationAccount);
+    IF NOT DestinationSavingsAccount.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ACCOUNT_NOT_FOUND');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Destination account with identifier number ' + DestinationAccount + ' does not exist!');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Check if the destination account allows deposits
+    SavingsProduct.RESET;
+    SavingsProduct.SETRANGE("Product ID", DestinationSavingsAccount."Product Type");
+    IF SavingsProduct.FINDFIRST THEN BEGIN
+        IF NOT (SavingsProduct."Allowed Transaction" = SavingsProduct."Allowed Transaction"::"Deposit only")
+           OR (SavingsProduct."Allowed Transaction" = SavingsProduct."Allowed Transaction"::"Withdraw & Deposit")THEN BEGIN
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('ERROR');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('transaction_status');
+            JsonTextWriter.WriteValue('ERROR');
+            JsonTextWriter.WritePropertyName('transaction_status_description');
+            JsonTextWriter.WriteValue('Destination account with identifier number ' + DestinationAccount + ' does NOT allow deposits!');
+            JsonTextWriter.WriteEndObject;
+            JsonTextWriter.WriteEndObject;
+            JsonTextWriter.Close();
+            StringWriter.Close();
+            EXIT(StringBuilder.ToString);
+        END;
+    END;
+
+    // Check status of the destination account
+    IF NOT CheckSavingsAccStatus(DestinationAccount) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('DEST_ACCOUNT_NOT_ACTIVE');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Destination account with identifier number ' + DestinationAccount + ' is NOT active. Current status is ' + FORMAT(DestinationSavingsAccount.Status));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    MpesaTrans.RESET;
+    MpesaTrans.INIT;
+    MpesaTrans."Entry No." := OriginatorID;
+    MpesaTrans."Date Posted":= DT2DATE(CURRENTDATETIME);
+    MpesaTrans."Time Posted" := DT2TIME(CURRENTDATETIME);
+    MpesaTrans."Transaction Date" := DT2DATE(TransactionDateTime);
+    MpesaTrans."Transaction Time" := DT2TIME(TransactionDateTime);
+    MpesaTrans."Member Account":= SourceSavingsAccount."No.";
+    MpesaTrans.Description := COPYSTR(TransactionDescription,1,50);
+    MpesaTrans.Amount := Amount;
+    MpesaTrans."Transaction Type":= MpesaTrans."Transaction Type"::"Account Transfer";
+    MpesaTrans."Transaction Name" := FORMAT(MpesaTrans."Transaction Type"::"Account Transfer");
+    MpesaTrans."Account to Check" := DestinationAccount;
+    MpesaTrans."Source Application" := SourceApplication;
+    MpesaTrans."Request Application" := RequestApplication;
+    MpesaTrans."Session ID" := SourceRef;
+    MpesaTrans."Transaction ID" := SourceRef;
+
+    MpesaTrans.INSERT;
+
+    // Success Response
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('SUCCESS');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('transaction_reference');
+    JsonTextWriter.WriteValue(SourceRef);
+    JsonTextWriter.WritePropertyName('transaction_status');
+    JsonTextWriter.WriteValue('SUCCESS');
+    JsonTextWriter.WritePropertyName('transaction_status_description');
+    JsonTextWriter.WriteValue('Internal Funds Transfer request received successfully');
+    JsonTextWriter.WriteEndObject;
+    JsonTextWriter.WriteEndObject;
+    JsonTextWriter.Close();
+    StringWriter.Close();
+    EXIT(StringBuilder.ToString);
+
+LOCAL IFTLoanRepayment(Payload : Text;RequestAPIID : Code[150]) : Text
+StringBuilder := StringBuilder.StringBuilder;
+StringWriter := StringWriter.StringWriter(StringBuilder);
+JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+JsonObject := JsonObject.Parse(FORMAT(Payload));
+IdentifierType := JsonObject.SelectToken('identifier_type').ToString;
+Identifier := JsonObject.SelectToken('identifier').ToString;
+OriginatorID := JsonObject.SelectToken('originator_id').ToString;
+SourceAccount := JsonObject.SelectToken('source_account').ToString;
+DestinationAccount := JsonObject.SelectToken('destination_account').ToString;
+Amount_str := JsonObject.SelectToken('amount').ToString;
+SourceRef := JsonObject.SelectToken('source_reference').ToString;
+RequestApplication := JsonObject.SelectToken('request_application').ToString;
+SourceApplication := JsonObject.SelectToken('source_application').ToString;
+TransactionDescription := JsonObject.SelectToken('transaction_description').ToString;
+TransactionDateTime_str := JsonObject.SelectToken('transaction_date_time').ToString;
+
+EVALUATE(Amount,Amount_str);
+EVALUATE(TransactionDateTime,ConvertISOToNavDateTime(TransactionDateTime_str));
+    IF NOT MemberExists(IdentifierType, Identifier, Members, Status, Response) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue(Response);
+        JsonTextWriter.WriteEndObject; // End response_payload
+        JsonTextWriter.WriteEndObject; // End main object
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Validations
+    IF Amount <= 0 THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Transaction amount must be greater than zero');
+        JsonTextWriter.WriteEndObject; // End response_payload
+        JsonTextWriter.WriteEndObject; // End main object
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    //// DUPLICATE / IFT_REQUEST_EXISTS
+      MpesaTrans.RESET;
+      MpesaTrans.SETRANGE("Entry No.",OriginatorID);
+      IF MpesaTrans.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('IFT_REQUEST_EXISTS');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('This transaction already exists. Originator ID = ' + FORMAT(MpesaTrans."Entry No."));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+    // Validate source account existence
+    SourceSavingsAccount.RESET;
+    SourceSavingsAccount.SETRANGE("No.", SourceAccount);
+    IF NOT SourceSavingsAccount.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('SUCCESS');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ACCOUNT_NOT_FOUND');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Source account with identifier number ' + SourceAccount + ' does not exist!');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Check if the account is withdrawable
+    SavingsProduct.RESET;
+    SavingsProduct.SETRANGE("Product ID", SourceSavingsAccount."Product Type");
+    IF SavingsProduct.FINDFIRST THEN BEGIN
+        IF (SavingsProduct."Mobile Transaction" = SavingsProduct."Mobile Transaction"::" ") AND
+           (SavingsProduct."Mobile Transaction" <> SavingsProduct."Mobile Transaction"::"Deposits Only") THEN BEGIN
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('request_status');
+            JsonTextWriter.WriteValue('ERROR');
+            JsonTextWriter.WritePropertyName('response_payload');
+            JsonTextWriter.WriteStartObject;
+            JsonTextWriter.WritePropertyName('transaction_status');
+            JsonTextWriter.WriteValue('ERROR');
+            JsonTextWriter.WritePropertyName('transaction_status_description');
+            JsonTextWriter.WriteValue('Source account with identifier number ' + SourceAccount + ' is NOT withdrawable!');
+            JsonTextWriter.WriteEndObject;
+            JsonTextWriter.WriteEndObject;
+            JsonTextWriter.Close();
+            StringWriter.Close();
+            EXIT(StringBuilder.ToString);
+        END;
+    END;
+
+    // Check account status
+    IF NOT CheckSavingsAccStatus(SourceAccount) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Source account with identifier number ' + SourceAccount + ' is NOT active. Current status is ' + FORMAT(SourceSavingsAccount.Status));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Validate minimum account balance
+    IF ValidateMinAccountBalance(Amount, SourceAccount,RequestAction) THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('INSUFFICIENT_BAL');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Account has insufficient balance to complete the transaction.');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Validate destination account
+    DestinationLoanAccount.RESET;
+    DestinationLoanAccount.SETRANGE("Loan No.", DestinationAccount);
+    IF NOT DestinationLoanAccount.FINDFIRST THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('ACCOUNT_NOT_FOUND');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Loan account with identifier number ' + DestinationAccount + ' does not exist!');
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    // Check status of the destination account
+    CASE DestinationLoanAccount.Status OF
+         DestinationLoanAccount.Status::Approved:
+           IsDestinationLoanAccActive := TRUE;
+      ELSE
+           IsDestinationLoanAccActive := FALSE;
+    END;
+
+     IF DestinationLoanAccount.Posted = FALSE THEN
+       IsDestinationLoanAccActive := FALSE
+     ELSE
+        IsDestinationLoanAccActive := TRUE;
+
+    IF NOT IsDestinationLoanAccActive THEN BEGIN
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('request_status');
+        JsonTextWriter.WriteValue('ERROR');
+        JsonTextWriter.WritePropertyName('response_payload');
+        JsonTextWriter.WriteStartObject;
+        JsonTextWriter.WritePropertyName('transaction_status');
+        JsonTextWriter.WriteValue('DEST_ACCOUNT_NOT_ACTIVE');
+        JsonTextWriter.WritePropertyName('transaction_status_description');
+        JsonTextWriter.WriteValue('Loan account with identifier number ' + DestinationAccount + ' is NOT approved. Current status is ' + FORMAT(DestinationLoanAccount.Status));
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.WriteEndObject;
+        JsonTextWriter.Close();
+        StringWriter.Close();
+        EXIT(StringBuilder.ToString);
+    END;
+
+    MpesaTrans.RESET;
+    MpesaTrans.INIT;
+    MpesaTrans."Entry No." := OriginatorID;
+    MpesaTrans."Date Posted":= DT2DATE(CURRENTDATETIME);
+    MpesaTrans."Time Posted" := DT2TIME(CURRENTDATETIME);
+    MpesaTrans."Transaction Date" := DT2DATE(TransactionDateTime);
+    MpesaTrans."Transaction Time" := DT2TIME(TransactionDateTime);
+    MpesaTrans."Member Account":= SourceSavingsAccount."No.";
+    MpesaTrans.Description := COPYSTR(TransactionDescription,1,50);
+    MpesaTrans.Amount := Amount;
+    MpesaTrans."Loan No." := DestinationAccount;
+    MpesaTrans."Transaction Type":= MpesaTrans."Transaction Type"::"Pay Loan From Account";
+    MpesaTrans."Transaction Name" := FORMAT(MpesaTrans."Transaction Type"::"Pay Loan From Account");
+    MpesaTrans."Account to Check" := DestinationAccount;
+    MpesaTrans."Source Application" := SourceApplication;
+    MpesaTrans."Request Application" := RequestApplication;
+    MpesaTrans."Session ID" := SourceRef;
+    MpesaTrans."Transaction ID" := SourceRef;
+
+    MpesaTrans.INSERT;
+    // Success Response
+    JsonTextWriter.WritePropertyName('request_status');
+    JsonTextWriter.WriteValue('SUCCESS');
+    JsonTextWriter.WritePropertyName('response_payload');
+    JsonTextWriter.WriteStartObject;
+    JsonTextWriter.WritePropertyName('transaction_reference');
+    JsonTextWriter.WriteValue(SourceRef);
+    JsonTextWriter.WritePropertyName('transaction_status');
+    JsonTextWriter.WriteValue('SUCCESS');
+    JsonTextWriter.WritePropertyName('transaction_status_description');
+    JsonTextWriter.WriteValue('Internal Funds Transfer request received successfully');
+    JsonTextWriter.WriteEndObject;
+    JsonTextWriter.WriteEndObject;
+    JsonTextWriter.Close();
+    StringWriter.Close();
+    EXIT(StringBuilder.ToString);
+
+GetTransactionCharges(Transaction : Text;Amount : Decimal) : Decimal
+ExciseDutyGL := GetExciseDutyGL();
+ExciseDutyRate := GetExciseRate();
+
+
+IF Transaction = 'SINGLE_ACCOUNT_BALANCE_ENQUIRY' THEN
+  TransactionType:=TransactionType::"Balance Enquiry";
+
+IF Transaction = 'LOAN_BALANCE_ENQUIRY' THEN
+  TransactionType:=TransactionType::"Loan Balance Enquiry";
+
+IF Transaction = 'IFT_LOAN_REPAYMENT' THEN
+  TransactionType:=TransactionType::"Pay Loan From Account";
+
+IF Transaction = 'IFT_ACCOUNT_TO_ACCOUNT' THEN
+  TransactionType:=TransactionType::"Account Transfer";
+
+IF Transaction = 'DEPOSIT' THEN
+  TransactionType:=TransactionType::"Mpesa Deposit";
+
+IF Transaction = 'Bank Deposit' THEN
+  TransactionType:=TransactionType::"Bank Deposit";
+
+IF Transaction = 'Bank Agent Deposit' THEN
+  TransactionType:=TransactionType::"Bank Agent Deposit";
+
+IF Transaction = 'MPESA_WITHDRAWAL' THEN
+  TransactionType:=TransactionType::"Mpesa Withdrawal";
+
+IF Transaction = 'CHECK_LOAN_LIMIT' THEN
+  TransactionType:=TransactionType::"Check Loan Limit";
+
+IF Transaction = 'LOAN_MINI_STATEMENT' THEN
+  TransactionType:=TransactionType::"Loan-Mini-Statement";
+
+IF Transaction = 'LOAN_FULL_STATEMENT' THEN
+  TransactionType:=TransactionType::"Loan-Full-Statement";
+
+IF Transaction = 'GUARANTORSHIP_ABILITY_ENQUIRY' THEN
+  TransactionType:=TransactionType::"Guarantorship Ability Enquiry";
+
+IF Transaction = 'LOAN_APPLICATION' THEN
+  TransactionType:=TransactionType::"Loan Application";
+
+IF Transaction = 'AIRTIME_REQUEST' THEN
+  TransactionType:=TransactionType::Airtime;
+
+IF Transaction = 'AIRTIME_PURCHASE' THEN
+  TransactionType:=TransactionType::Airtime;
+
+IF Transaction = 'ACCOUNT_MINI_STATEMENT' THEN
+  TransactionType:=TransactionType::"Account-Mini-Statement";
+
+IF Transaction = 'ACCOUNT_FULL_STATEMENT' THEN
+  TransactionType:=TransactionType::"Account-Full-Statement";
+
+
+IF Transaction = 'Utility Request' THEN
+  TransactionType:=TransactionType::"Utility Payment";
+
+IF Transaction = 'BILL_PAYMENT' THEN
+  TransactionType:=TransactionType::"Utility Payment";
+
+IF Transaction = 'Withdrawal Request' THEN
+  TransactionType:=TransactionType::"Mpesa Withdrawal";
+
+IF Transaction = 'Paybill' THEN
+  TransactionType:=TransactionType::Paybill;
+
+
+IF Transaction = 'BANK_TRANSFER' THEN
+  TransactionType:=TransactionType::"Bank Transfer";
+
+
+IF Transaction = 'Bank Transfer Request' THEN
+  TransactionType:=TransactionType::"Bank Transfer";
+
+
+IF Transaction = 'Pesalink Transfer' THEN
+  TransactionType:=TransactionType::"Pesalink Transfer";
+
+
+IF Transaction = 'Pesalink Transfer Request' THEN
+  TransactionType:=TransactionType::"Pesalink Transfer";
+
+TotalCharge:= 0;
+SaccoFee := 0;
+VendorCommission := 0;
+SafcomFee := 0;
+SMSCharge := 0;
+ExciseDuty:= 0;
+
+CoopSetup.RESET;
+CoopSetup.SETRANGE("Transaction Type",TransactionType);
+IF CoopSetup.FINDFIRST THEN BEGIN
+
+  SMSAccount := CoopSetup."SMS Account";
+  SMSCharge := CoopSetup."SMS Charge";
+
+
+
+  IF CoopSetup."Charge Type" = CoopSetup."Charge Type"::Staggered THEN BEGIN
+      SacAcc := '';
+      GetChargeAmount(CoopSetup."Staggered Charge Code",SaccoFee,SacAcc,Amount,SafcomFee,VendorCommission);
+  END;
+
+
+  IF CoopSetup."Transaction Type" = CoopSetup."Transaction Type"::"Mpesa Withdrawal" THEN BEGIN
+      SafcomCharges.RESET;
+      SafcomCharges.SETFILTER(Charge,'>0');
+      SafcomCharges.SETFILTER(Minimum,'<=%1',Amount);
+      SafcomCharges.SETFILTER(Maximum,'>=%1',Amount);
+        SafcomCharges.SETRANGE(Category,SafcomCharges.Category::Safaricom);
+      IF SafcomCharges.FINDFIRST THEN BEGIN
+          SafcomFee:=SafcomCharges.Charge;
+      END;
+  END;
+
+  IF CoopSetup."Transaction Type" = CoopSetup."Transaction Type"::"Pesalink Transfer" THEN BEGIN
+        SafcomCharges.RESET;
+        SafcomCharges.SETFILTER(Charge,'>0');
+        SafcomCharges.SETFILTER(Minimum,'<=%1',Amount);
+        SafcomCharges.SETFILTER(Maximum,'>=%1',Amount);
+        SafcomCharges.SETRANGE(Category,SafcomCharges.Category::Bank);
+        IF SafcomCharges.FINDFIRST THEN BEGIN
+            SafcomFee:=SafcomCharges.Charge;
+        END;
+    END;
+
+    IF CoopSetup."Transaction Type" = CoopSetup."Transaction Type"::"Bank Transfer" THEN BEGIN
+      SafcomFee:=CoopSetup."Vendor Commission"+SaccoFee+ExciseDuty;
+    END;
+    IF CoopSetup."Transaction Type" = CoopSetup."Transaction Type"::"Account Transfer" THEN BEGIN
+      SafcomFee:=CoopSetup."Vendor Commission"+SaccoFee+ExciseDuty;
+    END;
+    IF CoopSetup."Transaction Type" = CoopSetup."Transaction Type"::"Balance Enquiry" THEN BEGIN
+      SaccoFee:=CoopSetup."Sacco Fee";
+    END;
+
+  IF CoopSetup."Charge Type" <> CoopSetup."Charge Type"::Staggered THEN
+  SaccoFee := CoopSetup."Sacco Fee"+ExciseDuty;
+  VendorCommission:=CoopSetup."Vendor Commission"+ExciseDuty;
+
+  IF CoopSetup."Transaction Type" <> CoopSetup."Transaction Type"::"Balance Enquiry" THEN BEGIN
+    TotalCharge:=SaccoFee+ROUND(CoopSetup.VAT*VendorCommission/100)+VendorCommission+SafcomFee;
+    ExciseDuty:=ROUND((SaccoFee)*CoopSetup."Excise Duty %"/100);
+    TotalCharge += ExciseDuty;
+  END ELSE BEGIN
+    TotalCharge:=SaccoFee+CoopSetup."Sms Display Charge";
+    ExciseDuty:=ROUND((SaccoFee)*20/100);
+    TotalCharge += ExciseDuty;
+  END;
+END
+ELSE BEGIN
+  IF CoopSetup."Transaction Type"<>CoopSetup."Transaction Type"::"Pay Loan From Account" THEN
+  ERROR('Setup Missing for %1',CoopSetup."Transaction Type");
+  EXIT(0)
+END;
+EXIT(TotalCharge);
+
+GetChargeAmount(Code : Code[20];VAR ChargeAmt : Decimal;VAR ChargeAcc : Code[20];TransAmount : Decimal;VAR VendorCharge : Decimal;VAR SkyCharge : Decimal)
+
+ChargeAmt := 0;
+ChargeAcc := '';
+VendorCharge := 0;
+
+
+TransactionTypes.RESET;
+TransactionTypes.SETRANGE(Code,Code);
+TransactionTypes.SETRANGE(Type,TransactionTypes.Type::"Sky Mobile");
+IF TransactionTypes.FIND('-') THEN BEGIN
+    TransCharges.RESET;
+    TransCharges.SETRANGE("Transaction Type",TransactionTypes.Code);
+    IF TransCharges.FIND('-') THEN BEGIN
+        ChargeAcc := TransCharges."G/L Account";
+
+        IF TransCharges."Charge Type" = TransCharges."Charge Type"::"Flat Amount" THEN BEGIN
+            ChargeAmt := TransCharges."Charge Amount";
+        END;
+        IF TransCharges."Charge Type" = TransCharges."Charge Type"::"% of Amount" THEN BEGIN
+            ChargeAmt := ROUND(TransCharges."Percentage of Amount"/100*TransAmount);
+        END;
+        IF TransCharges."Charge Type" = TransCharges."Charge Type"::Staggered THEN BEGIN
+
+            TariffDetails.RESET;
+            TariffDetails.SETRANGE(TariffDetails.Code,TransCharges."Staggered Charge Code");
+            IF TariffDetails.FIND('-') THEN BEGIN
+                REPEAT
+                    IF (TransAmount >= TariffDetails."Lower Limit") AND (TransAmount <= TariffDetails."Upper Limit") THEN BEGIN
+                        IF TariffDetails."Use Percentage"=TRUE THEN BEGIN
+                            ChargeAmt:=TransAmount*TariffDetails.Percentage*0.01;
+                        END
+                        ELSE BEGIN
+                            ChargeAmt := TariffDetails."Charge Amount";
+                            VendorCharge := TariffDetails."External Vendor Charge";
+                            SkyCharge := TariffDetails."Mobile Vendor Charge";
+                        END;
+                    END
+                UNTIL TariffDetails.NEXT=0;
+            END;
+
+        END;
+
+
+
+    END;
+END;
+
+LOCAL RequestActionNotValid(Action : Text) : Text
+  StringBuilder := StringBuilder.StringBuilder;
+  StringWriter := StringWriter.StringWriter(StringBuilder);
+  JsonTextWriter := JsonTextWriter.JsonTextWriter(StringWriter);
+
+  JsonTextWriter.WriteStartObject;
+  JsonTextWriter.WritePropertyName('request_status');
+  JsonTextWriter.WriteValue('ERROR');
+  JsonTextWriter.WritePropertyName('response_payload');
+  JsonTextWriter.WriteStartObject;
+  JsonTextWriter.WritePropertyName('error_message');
+  JsonTextWriter.WriteValue('Request Action '+Action+' is not valid');
+  JsonTextWriter.WriteEndObject;// end 'reponse_payload' object
+  JsonTextWriter.WriteEndObject;//end main json object
+  EXIT(StringBuilder.ToString);
+
+LOCAL ConvertISOToNavDateTime(ISODateTime : Text) : Text
+IF ISODateTime = '' THEN
+        EXIT('');
+    DatePart := COPYSTR(ISODateTime, 1, 10);
+    TimePart := COPYSTR(ISODateTime,12,5);
+
+    EVALUATE(Year, COPYSTR(DatePart, 1, 4));
+    EVALUATE(Month, COPYSTR(DatePart, 6, 2));
+    EVALUATE(Day, COPYSTR(DatePart, 9, 2));
+
+    EVALUATE(Hour, COPYSTR(TimePart, 1, 2));
+    EVALUATE(Minute, COPYSTR(TimePart, 4, 2));
+    FormattedDate := FORMAT(Month,0) + '/' + FORMAT(Day,0) + '/' + FORMAT(Year,0) + ' ' + FORMAT(Hour,0) + ':' + FORMAT(Minute,0) + ' ';
+
+EXIT(FormattedDate);
+
+LOCAL FormatDate(RealDate : Date) DateText : Text
+
+ IF RealDate <> 0D THEN BEGIN
+    Day := DATE2DMY(RealDate,1);
+    Month := DATE2DMY(RealDate,2);
+    Year := DATE2DMY(RealDate,3);
+
+    // Format the day and month to always have two digits
+    IF Day < 10 THEN
+      FormattedDay := '0' + FORMAT(Day)
+    ELSE
+      FormattedDay := FORMAT(Day);
+
+    IF Month < 10 THEN
+      FormattedMonth := '0' + FORMAT(Month)
+    ELSE
+      FormattedMonth := FORMAT(Month);
+
+    DateText := FormattedDay + '/' + FormattedMonth + '/' + FORMAT(Year);
+  END ELSE
+    DateText := '';
+
+  EXIT(DateText);
+
+LOCAL FormatISODate(RealDate : Date) : Text
+  IF RealDate <> 0D THEN BEGIN
+    Day := DATE2DMY(RealDate,1);
+    Month := DATE2DMY(RealDate,2);
+    Year := DATE2DMY(RealDate,3);
+    IF Day < 10 THEN
+      FormattedDay := '0' + FORMAT(Day)
+    ELSE
+      FormattedDay := FORMAT(Day);
+
+    IF Month < 10 THEN
+      FormattedMonth := '0' + FORMAT(Month)
+    ELSE
+      FormattedMonth := FORMAT(Month);
+
+    EXIT(FORMAT(Year) + '-' + FormattedMonth + '-' + FormattedDay);
+  END ELSE
+    EXIT('');
+
+LOCAL FormatISOTime(RealTime : Time) : Text
+IF RealTime <> 0T THEN BEGIN
+     TzDuration := 0; // GMT
+     RealTime := RealTime + TzDuration;
+
+      Hours := TzDuration DIV (60 * 60 * 1000);
+      Minutes := (TzDuration DIV (60 * 1000)) MOD 60;
+      Seconds := (TzDuration DIV 1000) MOD 60;
+
+
+    IF Hours < 10 THEN
+      FormattedHour := '0' + FORMAT(Hours)
+    ELSE
+      FormattedHour := FORMAT(Hours);
+
+    IF Minutes < 10 THEN
+      FormattedMinute := '0' + FORMAT(Minutes)
+    ELSE
+      FormattedMinute := FORMAT(Minutes);
+
+    IF Seconds < 10 THEN
+      FormattedSecond := '0' + FORMAT(Seconds)
+    ELSE
+      FormattedSecond := FORMAT(Seconds);
+
+    EXIT(FormattedHour + ':' + FormattedMinute + ':' + FormattedSecond);
+  END ELSE
+    EXIT('00:00:00');
+
+LOCAL FormatISODateTime(RealDateTime : DateTime) : Text
+ IF RealDateTime = 0DT THEN
+    EXIT('');
+     // TZDuration := 1000 * 60 * 60 * 3; // GMT + 3
+    TzDuration := 0; // GMT
+    RealDateTime := RealDateTime + TzDuration;
+
+    EXIT(
+         FormatISODate(DT2DATE(RealDateTime)) + ' ' +
+         FORMAT(RealDateTime, 0, '<Hours24,2>:<Minutes,2>:<Seconds,2>')
+        );
+
+LOCAL MemberExists(IdentifierType : Text;Identifier : Text;VAR Members : Record Members;VAR Status : Text;VAR Response : Text) : Boolean
+Members.RESET;
+CASE IdentifierType OF
+  'MSISDN':
+      Members.SETFILTER("Mobile Phone No",'%1|%2','+'+Identifier,Identifier);
+  'CUSTOMER_NO':
+      Members.SETRANGE(Members."No.",Identifier);
+  'NATIONAL_ID':
+      Members.SETRANGE(Members."ID No.",Identifier);
+  'PASSPORT_NO':
+      Members.SETRANGE(Members."Passport No.",Identifier);
+ELSE BEGIN
+     Status := 'ERROR';
+     Response := 'Identifier Type '+IdentifierType+' is not valid';
+     EXIT(FALSE);
+     END;
+END;
+
+ IF Members.FINDFIRST THEN BEGIN
+   Status := 'SUCCESS';
+   EXIT(TRUE);
+ END ELSE BEGIN
+   Status := 'NOT_FOUND';
+   Response := 'Member with identification ' + IdentifierType + ' = ' + Identifier + ' NOT found';
+   EXIT(FALSE);
+   END;
+
+LOCAL GetMemberFosaAcc(Member : Record Members) : Text
+SavingsAccounts.RESET;
+SavingsAccounts.SETRANGE("Member No.", Member."No.");
+SavingsAccounts.SETRANGE("Product Type", '500');
+ IF SavingsAccounts.FINDFIRST THEN
+    EXIT(SavingsAccounts."No.")
+ ELSE
+    EXIT('');
+
+LOCAL CheckSavingsAccStatus(SavingsAccNumber : Code[150]) : Boolean
+SavingsAccounts.RESET;
+SavingsAccounts.SETRANGE("No.", SavingsAccNumber);
+SavingsAccounts.SETFILTER(Status,'<>%1',SavingsAccounts.Status::Deceased);
+ IF SavingsAccounts.FINDFIRST THEN
+    EXIT(TRUE)
+ ELSE
+    EXIT(FALSE);
+
+GetSavingsAccountBalance(Account : Text[30]) AccountBal : Decimal
+AccountBal:=0;
+savAccList.RESET;
+savAccList.SETRANGE("No.",Account);
+IF savAccList.FIND('-') THEN BEGIN
+    savAccList.CALCFIELDS("Balance (LCY)","Uncleared Cheques","ATM Transactions","Lien Placed","Authorised Over Draft","Mobile Withdrawals");
+
+    IF AccountTypes.GET(savAccList."Product Type") THEN BEGIN
+        minBal := 0;
+        IF AccountTypes."Product Category" = AccountTypes."Product Category"::Savings THEN
+            minBal := AccountTypes."Minimum Balance";
+        IF AccountTypes."Loan Disbursement Account" THEN
+            minBal := AccountTypes."Minimum Balance";
+
+        AccountBal:=(savAccList."Balance (LCY)"+savAccList."Authorised Over Draft")
+                      - minBal
+                      - savAccList."Uncleared Cheques"
+                      - savAccList."Lien Placed"
+                      - savAccList."Mobile Withdrawals"
+                      - savAccList."ATM Transactions";
+
+    END;
+END;
+EXIT(AccountBal);
+
+LOCAL GetLoanRunningBalance(EntryNo : Integer;LoanNo : Code[150]) RunBal : Decimal
+CreditLedgerEntry.RESET;
+CreditLedgerEntry.SETRANGE("Loan No", LoanNo);
+CreditLedgerEntry.SETFILTER("Entry No.", '<=%1', EntryNo);
+CreditLedgerEntry.SETFILTER("Transaction Type", '=%1|=%2', CreditLedgerEntry."Transaction Type"::Loan, CreditLedgerEntry."Transaction Type"::Repayment);
+
+IF CreditLedgerEntry.FINDFIRST THEN BEGIN
+   CreditLedgerEntry.CALCSUMS(Amount);
+   PrincipleBal := CreditLedgerEntry.Amount;
+END;
+
+CreditLedgerEntry.RESET;
+CreditLedgerEntry.SETRANGE("Loan No", LoanNo);
+CreditLedgerEntry.SETFILTER("Entry No.", '<=%1', EntryNo);
+CreditLedgerEntry.SETFILTER("Transaction Type", '=%1|=%2', CreditLedgerEntry."Transaction Type"::"Interest Due", CreditLedgerEntry."Transaction Type"::"Interest Paid");
+
+IF CreditLedgerEntry.FINDFIRST THEN BEGIN
+   CreditLedgerEntry.CALCSUMS(Amount);
+   InterestBal := CreditLedgerEntry.Amount;
+
+IF InterestBal < 0 THEN InterestBal := 0;
+END;
+RunBal := PrincipleBal + InterestBal;
+EXIT(RunBal);
+
+GetLoanQualifiedAmount(MemberNo : Code[20];LoanProductType : Code[20]) : Decimal
+saccoAccount.RESET;
+saccoAccount.SETRANGE("Member No.",MemberNo);
+saccoAccount.SETFILTER(Status,'<>%1',saccoAccount.Status::Deceased);
+IF saccoAccount.FIND('-') THEN BEGIN
+
+    IF LoanType.GET(LoanProductType) THEN BEGIN
+
+        Salary1 := 0;
+        Salary2 := 0;
+        Salary3 := 0;
+
+        // Adjust the date range to 135 days
+        SalEnd := TODAY;
+        SalStart := CALCDATE('-300D', SalEnd);
+        // Check for at least three salary entries within 135 days
+        SalBuffer.RESET;
+        SalBuffer.SETCURRENTKEY(SalBuffer."Member No.", SalBuffer."Posting Date");
+        SalBuffer.SETRANGE(SalBuffer."Member No.", MemberNo);
+        SalBuffer.SETRANGE(Posted, TRUE);
+        SalBuffer.SETRANGE("Income Type", SalBuffer."Income Type"::Salary);
+        SalBuffer.SETFILTER("Posting Date", '%1..%2', SalStart, SalEnd);
+
+        IF SalBuffer.COUNT >= 3 THEN BEGIN
+            SalBuffer.FINDSET;
+            SalBuffer.NEXT;
+            Salary1 := SalBuffer.Amount;
+            Date1 := SalBuffer."Posting Date";
+
+            SalBuffer.NEXT;
+            Salary2 := SalBuffer.Amount;
+            Date2 := SalBuffer."Posting Date";
+
+            SalBuffer.NEXT;
+            Salary3 := SalBuffer.Amount;
+            Date3 := SalBuffer."Posting Date";
+        END ELSE BEGIN
+            EXIT(0);
+        END;
+
+        // Calculate the Net Salary based on the smallest of the three salaries
+        NetSal := Salary1;
+        IF NetSal > Salary2 THEN
+            NetSal := Salary2;
+
+        IF NetSal > Salary3 THEN
+            NetSal := Salary3;
+
+        LoanRep := 0;
+
+        // Process loans with 'Recovery Mode' as Salary
+        Loans.RESET;
+        Loans.SETRANGE("Member No.",MemberNo);
+        Loans.SETRANGE("Recovery Mode", Loans."Recovery Mode"::Salary);
+        Loans.SETRANGE("Disbursement Date", 0D, DMY2DATE(20, DATE2DMY(TODAY, 2), DATE2DMY(TODAY, 3)));
+        Loans.SETRANGE("Mobile Loan", FALSE);
+        Loans.SETFILTER("Outstanding Balance", '>0');
+
+        // Calculate outstanding loan balances
+        IF Loans.FINDFIRST THEN BEGIN
+            REPEAT
+                Loans.CALCFIELDS("Outstanding Balance");
+
+                IntAmt := 0;
+                CASE Loans."Interest Calculation Method" OF
+                    Loans."Interest Calculation Method"::"Reducing Flat":
+                    BEGIN
+                        IF ProdFac.GET(Loans."Loan Product Type") THEN BEGIN
+                            IF ProdFac."Flat Rate[ 1 %]" = TRUE THEN
+                                IntAmt := ROUND((Loans."Approved Amount" * 0.5) * (Loans.Installments + 1) / (Loans.Installments * 100), 1, '=')
+                            ELSE
+                                IntAmt := ROUND((Loans."Approved Amount" * 0.6) * (Loans.Installments + 1) / (Loans.Installments * 100), 1, '=');
+                        END;
+                    END;
+
+                    Loans."Interest Calculation Method"::"Reducing Balance":
+                        IntAmt := ROUND(Loans."Outstanding Balance" * (Loans.Interest / 1200), 1, '=');
+
+                    Loans."Interest Calculation Method"::"Straight Line":
+                        IntAmt := ROUND(Loans."Approved Amount" * (Loans.Interest / 1200), 1, '=');
+
+                    ELSE
+                        IntAmt := ROUND(Loans."Outstanding Balance" * (Loans.Interest / 1200), 1, '=');
+                END;
+
+                PrAmt := Loans."Loan Principle Repayment";
+
+                CASE Loans."Interest Calculation Method" OF
+                    Loans."Interest Calculation Method"::"Reducing Flat",
+                    Loans."Interest Calculation Method"::"Reducing Balance",
+                    Loans."Interest Calculation Method"::"Straight Line":
+                        PrAmt := (Loans."Approved Amount" / Loans.Installments);
+                    ELSE
+                        PrAmt := (Loans.Repayment - IntAmt);
+                END;
+
+                IF Loans."Adjusted Amount" > 0 THEN BEGIN
+                    IF Loans."Adjusted Amount" > PrAmt THEN
+                        PrAmt := Loans."Adjusted Amount";
+                END;
+
+                IF PrAmt > Loans."Outstanding Balance" THEN
+                    PrAmt := Loans."Outstanding Balance";
+
+                LoanRep += PrAmt + IntAmt;
+
+            UNTIL Loans.NEXT = 0;
+        END;
+
+        // Process mobile loans
+        Loans.RESET;
+        Loans.SETRANGE("Member No.", MemberNo);
+        Loans.SETRANGE("Recovery Mode", Loans."Recovery Mode"::Salary);
+        Loans.SETRANGE("Mobile Loan", TRUE);
+        Loans.SETFILTER("Outstanding Balance", '>0');
+        IF Loans.FINDFIRST THEN BEGIN
+            REPEAT
+                Loans.CALCFIELDS("Outstanding Balance");
+                IF LoanType.GET(Loans."Loan Product Type") THEN;
+                IF LoanType."Advantage Loan" THEN BEGIN
+                    LoanRep += Loans.Repayment * 4.43;
+                END ELSE
+                    LoanRep += Loans."Outstanding Balance";
+            UNTIL Loans.NEXT = 0;
+        END;
+
+        STODed := 0;
+        StandingOrders.RESET;
+        StandingOrders.SETRANGE(StandingOrders."Source Account No.", saccoAccount."No.");
+        StandingOrders.SETRANGE(StandingOrders.Status, StandingOrders.Status::Approved);
+        StandingOrders.SETFILTER("End Date", '>%1', TODAY);
+        IF StandingOrders.FIND('-') THEN BEGIN
+            REPEAT
+                STODed := STODed + StandingOrders.Amount;
+            UNTIL StandingOrders.NEXT = 0;
+        END;
+
+        // Calculate the final Net Salary after deductions
+        NetSal := NetSal - LoanRep - STODed;
+
+        IF NetSal < 0 THEN
+            NetSal := 0;
+
+        // Apply LoanType Net Salary Multiplier
+        NetSal := ROUND(LoanType."Net Salary Multiplier %" / 100 * NetSal);
+
+        IF LoanType."Advantage Loan" THEN
+            NetSal *= ROUND(LoanType."Prefferential Default installm" / 5);
+
+        // Check if member's deposit balance qualifies for the loan
+        DepAcc.RESET;
+        DepAcc.SETRANGE("Member No.", MemberNo);
+        DepAcc.SETRANGE("Product Category", DepAcc."Product Category"::"Deposit Contribution");
+        IF DepAcc.FINDFIRST THEN BEGIN
+            DepAcc.CALCFIELDS("Balance (LCY)");
+            IF NetSal > DepAcc."Balance (LCY)" THEN
+                NetSal := DepAcc."Balance (LCY)";
+
+            IF NetSal < 0 THEN
+                NetSal := 0;
+        END ELSE BEGIN
+            NetSal := 0;
+        END;
+
+        MaxLoanAmount := LoanType."Maximum Loan Amount";
+
+        // Check mobile loan balances and adjust maximum loan amount
+        Loans.RESET;
+        Loans.SETRANGE("Member No.", MemberNo);
+        Loans.SETRANGE("Recovery Mode", Loans."Recovery Mode"::Salary);
+        Loans.SETRANGE("Mobile Loan", TRUE);
+        Loans.SETFILTER("Outstanding Balance", '>0');
+        Loans.SETRANGE(Loans."Loan Product Type", LoanType."Product ID");
+        IF Loans.FINDFIRST THEN BEGIN
+            LoanRep := 0;
+            REPEAT
+                Loans.CALCFIELDS("Outstanding Balance");
+                IF LoanType.GET(Loans."Loan Product Type") THEN;
+                IF LoanType."Advantage Loan" THEN BEGIN
+                    LoanRep += Loans.Repayment * 4.43;
+                END ELSE
+                    LoanRep += Loans."Outstanding Balance";
+            UNTIL Loans.NEXT = 0;
+
+            MaxLoanAmount -= LoanRep;
+            IF MaxLoanAmount < 0 THEN
+                MaxLoanAmount := 0;
+        END;
+
+        IF NetSal > MaxLoanAmount THEN
+            NetSal := MaxLoanAmount;
+
+        IF NetSal <= 0 THEN BEGIN
+            EXIT(0)
+        END ELSE BEGIN
+            EXIT(NetSal);
+        END;
+
+        EXIT(ROUND(NetSal, 1, '<'));
+    END;
+END;
+EXIT(0);
+
+GetExciseRate() rate : Integer
+
+
+GenSetup.GET;
+GenSetup.TESTFIELD(GenSetup."Excise Duty (%)");
+rate := GenSetup."Excise Duty (%)";
+
+GetExciseDutyGL() account : Text[20]
+
+GenSetup.RESET;
+GenSetup.GET;
+GenSetup.TESTFIELD(GenSetup."Excise Duty G/L");
+account := GenSetup."Excise Duty G/L";
+
+LOCAL ValidateMinAccountBalance(RequestedAmount : Decimal;TheSavingsAccount : Code[150];TransactionType : Text) : Boolean
+TotalCost := GetTransactionCharges(TransactionType,RequestedAmount) + RequestedAmount;
+EXIT(TotalCost > GetSavingsAccountBalance(TheSavingsAccount));
+
+LOCAL CheckWithdrawalTransactionLimit(RequestedAmount : Decimal;AccountNo : Code[150];Transaction : Text;VAR Resp : Text;TransactionDate : DateTime) : Boolean
+  IF Transaction = 'MPESA_WITHDRAWAL' THEN
+  TransactionType:=TransactionType::"Mpesa Withdrawal";
+
+  IF Transaction = 'BILL_PAYMENT' THEN
+  TransactionType:=TransactionType::"Utility Payment";
+
+  IF Transaction = 'AIRTIME_PURCHASE' THEN
+  TransactionType:=TransactionType::Airtime;
+
+  IF Transaction = 'BANK_TRANSFER' THEN
+  TransactionType:=TransactionType::"Bank Transfer";
+
+  CoopSetup.RESET;
+  CoopSetup.SETRANGE("Transaction Type",TransactionType);
+  IF CoopSetup.FINDFIRST THEN BEGIN
+    IF CoopSetup."Transaction Limit" > 0 THEN BEGIN
+      IF RequestedAmount > CoopSetup."Transaction Limit" THEN BEGIN
+        Resp := 'Transaction amount exceeds the maximum withdrawal limit of KES ' + FORMAT(CoopSetup."Transaction Limit");
+        EXIT(FALSE);
+      END;
+    END;
+
+    IF CoopSetup."Daily Limit" > 0 THEN BEGIN
+      Limit := CoopSetup."Daily Limit" - GetAmountTransacted(Transaction, AccountNo, DT2DATE(TransactionDate), Type::Daily);
+      IF Limit < 0 THEN
+        Limit := 0;
+      IF Limit < RequestedAmount THEN BEGIN
+        Resp := 'Transaction amount exceeds the set daily limit. You can only withdraw up to KES ' + FORMAT(Limit) + ' today.';
+        EXIT(FALSE);
+      END;
+    END;
+
+    IF CoopSetup."Weekly Limit" > 0 THEN BEGIN
+      Limit := CoopSetup."Weekly Limit" - GetAmountTransacted(Transaction, AccountNo, DT2DATE(TransactionDate), Type::Weekly);
+      IF Limit < 0 THEN
+        Limit := 0;
+      IF Limit < RequestedAmount THEN BEGIN
+        Resp := 'Transaction amount exceeds the set weekly limit. You can only withdraw up to KES ' + FORMAT(Limit) + ' today.';
+        EXIT(FALSE);
+      END;
+    END;
+
+    IF CoopSetup."Monthly Limit" > 0 THEN BEGIN
+      Limit := CoopSetup."Monthly Limit" - GetAmountTransacted(Transaction, AccountNo, DT2DATE(TransactionDate), Type::Monthly);
+      IF Limit < 0 THEN
+        Limit := 0;
+      IF Limit < RequestedAmount THEN BEGIN
+        Resp := 'Transaction amount exceeds the set monthly limit. You can only withdraw up to KES ' + FORMAT(Limit) + ' today.';
+        EXIT(FALSE);
+      END;
+    END;
+  END;
+  EXIT(TRUE);
+
+GetAmountTransacted(Transaction : Text;AccountNo : Code[20];Date : Date;Type : 'Daily,Weekly,Monthly') Amt : Decimal
+ Amt := 0;
+ IF Transaction = 'MPESA_WITHDRAWAL' THEN
+  TransactionType:='Withdrawal Request';
+
+  IF Transaction = 'BILL_PAYMENT' THEN
+  TransactionType:='Utility Request';
+
+  IF Transaction = 'AIRTIME_PURCHASE' THEN
+  TransactionType:='Airtime Request';
+
+  IF Transaction = 'BANK_TRANSFER' THEN
+   TransactionType:='Bank Transfer Request';
+
+ IF (TransactionType = 'Withdrawal Request') OR (TransactionType = 'Utility Request') OR (TransactionType = 'Airtime Request')  OR (TransactionType = 'Bank Transfer Request')  THEN BEGIN
+    MobileWithdrawalsBuffer.RESET;
+    MobileWithdrawalsBuffer.SETRANGE(MobileWithdrawalsBuffer.Reversed,FALSE);
+    MobileWithdrawalsBuffer.SETRANGE(MobileWithdrawalsBuffer."Account No",AccountNo);
+    MobileWithdrawalsBuffer.SETRANGE(MobileWithdrawalsBuffer."Withdrawal Type",TransactionType);
+    MobileWithdrawalsBuffer.SETRANGE(MobileWithdrawalsBuffer.Source,MobileWithdrawalsBuffer.Source::"M-PESA");
+    IF Type = Type::Daily THEN
+    MobileWithdrawalsBuffer.SETRANGE(MobileWithdrawalsBuffer."Transaction Date",Date);
+    IF Type = Type::Weekly THEN
+    MobileWithdrawalsBuffer.SETRANGE(MobileWithdrawalsBuffer."Transaction Date",CALCDATE('-CW',Date),CALCDATE('CW',Date));
+    IF Type = Type::Monthly THEN
+    MobileWithdrawalsBuffer.SETRANGE(MobileWithdrawalsBuffer."Transaction Date",CALCDATE('-CM',Date),CALCDATE('CM',Date));
+    IF MobileWithdrawalsBuffer.FIND('-') THEN BEGIN
+        MobileWithdrawalsBuffer.CALCSUMS(Amount);
+        Amt := MobileWithdrawalsBuffer.Amount;
+    END;
+ END;

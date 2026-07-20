@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <title>Account Statement</title>
+    <link rel='stylesheet' href='account-statement-style-sheet.css'/>
+</head>
+<body>
+<div>
+    <div class='organization-details'>
+
+        <div class='organization-details-table-container'>
+            <table class='organization-details-table'>
+                <tr>
+                    <td>Apstar Sacco</td>
+                </tr>
+                <tr>
+                    <td> P.O. Box 44071 00100, Nairobi-Kenya</td>
+                </tr>
+                <tr>
+                    <td>Cell 0111 035 600</td>
+                </tr>
+                <tr>
+                    <td>Whatsapp +254 743 787960</td>
+                </tr>
+                <tr>
+                    <td>info@apstarsaccosacco.coop</td>
+                </tr>
+                <tr>
+                    <td>www.apstarsacco.coop</td>
+                </tr>
+            </table>
+        </div>
+        <div class='organization-logo-container'>
+            <img src='https://apstarsacco.coop/wp-content/uploads/2023/02/Apstar-Sacco-Slogan-Logo.png' class='organization-logo' alt='logo'/>
+        </div>
+
+    </div>
+
+    <div class='statement-header-container'>
+
+        <div class='account-details'>
+            <h3 class='statement-header1'>Account Statement</h3>
+            <h4 class='statement-header2'>[STATEMENT_PERIOD]</h4>
+            <hr/>
+
+            <table class='statement-header-account-table'>
+                <tr>
+                    <td class='statement-header-account-table-label'>Account Number</td>
+                    <td>[ACCOUNT_NUMBER]</td>
+                </tr>
+                <tr>
+                    <td class='statement-header-account-table-label'>Account Name</td>
+                    <td>[ACCOUNT_NAME]</td>
+                </tr>
+
+                <tr>
+                    <td class='statement-header-account-table-label'>Account Holder</td>
+                    <td>[ACCOUNT_HOLDER]</td>
+                </tr>
+                <tr>
+                    <td class='statement-header-account-table-label'>Total Paid In</td>
+                    <td>[TOTAL_PAID_IN]</td>
+                </tr>
+                <tr>
+                    <td class='statement-header-account-table-label'>Total Paid Out</td>
+                    <td>[TOTAL_PAID_OUT]</td>
+                </tr>
+                <tr>
+                    <td class='statement-header-account-table-label'>Account Balance</td>
+                    <td>[ACCOUNT_BALANCE]</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div>
+        Please note that this is NOT a certified account statement. Please visit the SACCO to get a certified account statement.
+    </div>
+    <div>
+        <table class='statement-header-account-statement'>
+            <tr>
+                <th class='statement-header-acc-stmnt-date' style='border-left: 1px solid  #27235c'>Date</th>
+                <th class='statement-header-acc-stmnt-description'>Description</th>
+                <th class='statement-header-acc-stmnt-paid-in'>Paid In (KES)</th>
+                <th class='statement-header-acc-stmnt-paid-out'>Paid Out (KES)</th>
+                <th class='statement-header-acc-stmnt-balance' style='border-right: 1px solid  #27235c'>Bal. (KES)</th>
+            </tr>
+            [THE_ACCOUNT_STATEMENT_DETAILS]
+        </table>
+    </div>
+</div>
+</body>
+</html>

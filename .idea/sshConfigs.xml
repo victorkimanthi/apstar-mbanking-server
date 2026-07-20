@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" host="192.168.151.9" id="239bbc9e-fdff-4dcf-b85f-b0913bac1a3e" port="22" nameFormat="DESCRIPTIVE" username="skyworld" useOpenSSHConfig="true" />
+      <sshConfig authType="PASSWORD" host="192.168.0.224" id="6dafe35e-3e1c-470e-b062-4861817a0511" port="22" nameFormat="DESCRIPTIVE" username="skyworld" useOpenSSHConfig="true" />
+      <sshConfig authType="PASSWORD" host="192.168.151.77" id="240baef7-19a1-4ee4-92b3-0b34e333f8fa" port="22" nameFormat="DESCRIPTIVE" username="skyworld" useOpenSSHConfig="true" />
+      <sshConfig authType="PASSWORD" host="192.168.151.75" id="9cc94a78-0fc2-44a1-98fd-cfa4da39a2d5" port="22" nameFormat="DESCRIPTIVE" username="collins" useOpenSSHConfig="true" />
+    </configs>
+  </component>
+</project>
