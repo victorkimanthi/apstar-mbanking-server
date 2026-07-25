@@ -7047,6 +7047,10 @@ public class MAPPAPI {
                         Element elDiscountedAmount = doc.createElement("DISCOUNTED_AMOUNT");
                         Element elProductName = doc.createElement("NAME");
 
+                        /// decode product description
+                    byte [] decodedBytesDescription = Base64.getDecoder().decode(strProductDescription);
+                    strProductDescription = new String(decodedBytesDescription);
+
                         elDescription.setTextContent(strProductDescription);
                         elImageURL.setTextContent(strProductImageURL);
                         elAmount.setTextContent(strActualAmount);
@@ -8484,9 +8488,9 @@ public class MAPPAPI {
 
                     FlexicoreHashMap loanLimitMap = loanQualificationMap.getFlexicoreHashMap("payload");
 
-                    String strEligibleAmount = loanLimitMap.getStringValue("eligible_amount");
+//                    String strEligibleAmount = loanLimitMap.getStringValue("eligible_amount");
                     //comment
-//                    String strEligibleAmount = "30000";
+                    String strEligibleAmount = "30000";
                     String strMinAmount = loanLimitMap.getStringValue("loan_type_min_amount");
                     String strMaxAmount = loanLimitMap.getStringValue("loan_type_max_amount");
 //                    String strMaxAmount = "30000";
