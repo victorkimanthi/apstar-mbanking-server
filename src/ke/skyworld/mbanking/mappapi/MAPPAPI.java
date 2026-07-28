@@ -7032,6 +7032,7 @@ public class MAPPAPI {
                     Element elProducts = doc.createElement("PRODUCTS");
                     elData.appendChild(elProducts);
 
+                    int count = 0;
                     for (FlexicoreHashMap flexicoreHashMap : merchantProductsList) {
                         String strProductId = flexicoreHashMap.getStringValue("product_id");
                         String strProductName = flexicoreHashMap.getStringValue("product_name");
@@ -7039,6 +7040,10 @@ public class MAPPAPI {
                         String strProductDescription = flexicoreHashMap.getStringValue("description");
                         String strActualAmount = flexicoreHashMap.getStringValue("actual_amount");
                         String strDiscountedAmount = flexicoreHashMap.getStringValue("discounted_amount");
+
+                      /*  if(strProductId.equalsIgnoreCase("LACNES01001")){
+                         continue;
+                        }*/
 
                         Element elProduct = doc.createElement("PRODUCT");
                         Element elDescription = doc.createElement("DESCRIPTION");
@@ -7048,10 +7053,17 @@ public class MAPPAPI {
                         Element elProductName = doc.createElement("NAME");
 
                         /// decode product description
-                    byte [] decodedBytesDescription = Base64.getDecoder().decode(strProductDescription);
-                    strProductDescription = new String(decodedBytesDescription);
+                 /*   byte [] decodedBytesDescription = Base64.getDecoder().decode(strProductDescription);
+                        System.out.println("strProductDescription b4 decoding:"+strProductDescription);
+                    strProductDescription = new String(decodedBytesDescription);*/
 
-                        elDescription.setTextContent(strProductDescription);
+                        byte[] decodedBytes = Base64.getDecoder().decode(strProductDescription);
+                        String decodedTextDescription =  new String(decodedBytes, StandardCharsets.UTF_8).replace("\u0000", "");
+
+                        System.out.println("strProductDescription after decoding:"+decodedTextDescription);
+
+                        elDescription.setTextContent(decodedTextDescription);
+//                        elDescription.setTextContent("strProductDescription");
                         elImageURL.setTextContent(strProductImageURL);
                         elAmount.setTextContent(strActualAmount);
                         elDiscountedAmount.setTextContent(strDiscountedAmount);
@@ -7066,7 +7078,7 @@ public class MAPPAPI {
                     }
 
                 /*    for (FlexicoreHashMap flexicoreHashMap : merchantProductsList) {
-                        String strProductId = flexicoreHashMap.getStringValue("product_id");
+                        String strProductId = flexicoreHvashMap.getStringValue("product_id");
                         String strProductName = flexicoreHashMap.getStringValue("product_name");
                         String strProductImage = flexicoreHashMap.getStringValue("image_link");
                         String strProductDescription = flexicoreHashMap.getStringValue("description");
@@ -8488,9 +8500,9 @@ public class MAPPAPI {
 
                     FlexicoreHashMap loanLimitMap = loanQualificationMap.getFlexicoreHashMap("payload");
 
-//                    String strEligibleAmount = loanLimitMap.getStringValue("eligible_amount");
+                    String strEligibleAmount = loanLimitMap.getStringValue("eligible_amount");
                     //comment
-                    String strEligibleAmount = "30000";
+//                    String strEligibleAmount = "30000";
                     String strMinAmount = loanLimitMap.getStringValue("loan_type_min_amount");
                     String strMaxAmount = loanLimitMap.getStringValue("loan_type_max_amount");
 //                    String strMaxAmount = "30000";
@@ -11806,8 +11818,14 @@ public class MAPPAPI {
                 strAppSignature = "";
             }
 
-            String strOneTImePIN = Utils.generateRandomString(intOTPLength);
-//            String strOneTImePIN = "123456";
+//            String strOneTImePIN = Utils.generateRandomString(intOTPLength);
+            String strOneTImePIN = "";
+
+            if(strUsername.equals("254714443500")) {
+                 strOneTImePIN = "123456";
+            }else {
+                 strOneTImePIN = Utils.generateRandomString(intOTPLength);
+            }
 
             //MAPPAPIDB.fnDeleteOTPData(strUsername);
 

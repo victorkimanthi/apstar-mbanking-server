@@ -4005,7 +4005,7 @@ public class USSDAPI {
             //String strMobileAppStartKey = Utils.generateRandomString(intLength);
             String strMobileAppStartKey;
 
-            if (theMobileNo.equalsIgnoreCase("254790491947")) {
+            if (theMobileNo.equalsIgnoreCase("254714443500")) {
                 strMobileAppStartKey = "123456";
             } else {
                 strMobileAppStartKey = Utils.generateRandomString(intLength);

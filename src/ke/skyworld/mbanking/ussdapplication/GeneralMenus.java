@@ -829,6 +829,10 @@ public interface GeneralMenus {
                         String strLoanTypeMin = loanTypesItemMap.getStringValue("loan_type_min_amount");
                         String strLoanTypeMax = loanTypesItemMap.getStringValue("loan_type_max_amount");
 
+                        if(strLoanTypeID.equalsIgnoreCase("709")){
+                            continue;
+                        }
+
                         hmLoanType.put("id", strLoanTypeID);
                         hmLoanType.put("name", strLoanTypeName);
                         hmLoanType.put("label", strLoanTypeLabel);
