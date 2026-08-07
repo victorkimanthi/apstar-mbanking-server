@@ -5800,7 +5800,7 @@ public class CBSAPI {
                                                                        double theAmount,
                                                                        String theLoanDurationId,
                                                                        String theMerchantId,
-                                                                       String theProductId,
+                                                                       FlexicoreArrayList theItemsList,
                                                                        String theSourceReference,
                                                                        String theRequestApplication,
                                                                        String theTransactionDateTime
@@ -5831,7 +5831,7 @@ public class CBSAPI {
                     theAmount,
                     theLoanDurationId,
                     theMerchantId,
-                    theProductId,
+                    theItemsList,
                     theSourceReference,
                     theRequestApplication,
                     theTransactionDateTime);
@@ -6240,19 +6240,23 @@ public class CBSAPI {
 
     public static TransactionWrapper<FlexicoreHashMap> getMerchantProducts(String strRequestingMobileNumber,
                                                                     String theIdentifierType,
-                                                                    String theIdentifier, String strMerchantId) {
+                                                                    String theIdentifier,
+                                                                    String strMerchantId,
+                                                                    String strPage,
+                                                                    String strPageCount) {
 
         TransactionWrapper<FlexicoreHashMap> resultWrapper = new TransactionWrapper<>();
 
         try {
-            TransactionWrapper<FlexicoreArrayList> loanTypesListWrapper = ApStarCBS.getMerchantProducts(theIdentifierType, theIdentifier,strMerchantId);
+//            TransactionWrapper<FlexicoreArrayList> loanTypesListWrapper = ApStarCBS.getMerchantProducts(theIdentifierType, theIdentifier,strMerchantId,strPage,strPageCount);
+            TransactionWrapper<FlexicoreHashMap> merchantProductsWrapper = ApStarCBS.getMerchantProducts(theIdentifierType, theIdentifier,strMerchantId,strPage,strPageCount);
 
-            if (loanTypesListWrapper.hasErrors() && loanTypesListWrapper.getStatusCode() != HttpsURLConnection.HTTP_NOT_FOUND) {
-                System.err.println(strRequestingMobileNumber + " => ApStarCBS.getLoanTypes() - " + loanTypesListWrapper.getErrors() + "\n" + loanTypesListWrapper.getMessages());
+            if (merchantProductsWrapper.hasErrors() && merchantProductsWrapper.getStatusCode() != HttpsURLConnection.HTTP_NOT_FOUND) {
+                System.err.println(strRequestingMobileNumber + " => ApStarCBS.getLoanTypes() - " + merchantProductsWrapper.getErrors() + "\n" + merchantProductsWrapper.getMessages());
 
                 resultWrapper.setStatusCode(HttpsURLConnection.HTTP_INTERNAL_ERROR);
                 resultWrapper.setHasErrors(true);
-                resultWrapper.addError(loanTypesListWrapper.getErrors());
+                resultWrapper.addError(merchantProductsWrapper.getErrors());
                 resultWrapper.setData(new FlexicoreHashMap()
                         .putValue("end_session", USSDAPIConstants.Condition.YES)
                         .putValue("cbs_api_return_val", USSDAPIConstants.StandardReturnVal.ERROR)
@@ -6261,7 +6265,7 @@ public class CBSAPI {
                 return resultWrapper;
             }
 
-            if (loanTypesListWrapper.getStatusCode() == HttpsURLConnection.HTTP_NOT_FOUND) {
+            if (merchantProductsWrapper.getStatusCode() == HttpsURLConnection.HTTP_NOT_FOUND) {
                 resultWrapper.setHasErrors(true);
                 resultWrapper.addError("Sorry! There are no products listed for sale by this seller.");
                 resultWrapper.setData(new FlexicoreHashMap()
@@ -6275,7 +6279,8 @@ public class CBSAPI {
             resultWrapper.setData(new FlexicoreHashMap()
                     .putValue("end_session", USSDAPIConstants.Condition.NO)
                     .putValue("cbs_api_return_val", USSDAPIConstants.StandardReturnVal.SUCCESS)
-                    .putValue("payload", loanTypesListWrapper.getData())
+                    .putValue("payload", merchantProductsWrapper.getData())
+//                    .putValue("pagination", merchantProductsWrapper.getSingleRecord().getFlexicoreHashMap("pagination"))
             );
 
             return resultWrapper;

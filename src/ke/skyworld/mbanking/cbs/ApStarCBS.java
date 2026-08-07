@@ -832,7 +832,7 @@ public class ApStarCBS {
                                                                        double theAmount,
                                                                        String theLoanDuration,
                                                                        String theMerchantId,
-                                                                       String theProductId,
+                                                                       FlexicoreArrayList theItemsList,
                                                                        String theSourceReference,
                                                                        String theRequestApplication,
                                                                        String theTransactionDateTime
@@ -855,7 +855,7 @@ public class ApStarCBS {
                         .putValue("amount", theAmount)
                         .putValue("loan_duration", theLoanDuration)
                         .putValue("merchant_id", theMerchantId)
-                        .putValue("product_id", theProductId)
+                        .putValue("items",theItemsList)
                         .putValue("source_reference",theSourceReference.toString().substring(0,10))
                         .putValue("originator_id",UUID.randomUUID().toString())
                         .putValue("request_application", theRequestApplication)
@@ -987,7 +987,8 @@ public class ApStarCBS {
         return resultWrapper;
     }
 
-    public static TransactionWrapper<FlexicoreArrayList> getMerchantProducts(String theIdentifierType, String theIdentifier,String strMerchantId) {
+//    public static TransactionWrapper<FlexicoreArrayList> getMerchantProducts(String theIdentifierType, String theIdentifier,String strMerchantId,String strPage,String strPageCount) {
+    public static TransactionWrapper<FlexicoreHashMap> getMerchantProducts(String theIdentifierType, String theIdentifier,String strMerchantId,String strPage,String strPageCount) {
 
         String strRequestId = UUID.randomUUID().toString();
 
@@ -1003,9 +1004,11 @@ public class ApStarCBS {
                         .putValue("identifier_type", theIdentifierType)
                         .putValue("identifier", theIdentifier)
                         .putValue("merchant_id",strMerchantId)
+                        .putValue("page",strPage)
+                        .putValue("page_count",strPageCount)
                 );
 
-        TransactionWrapper<FlexicoreArrayList> resultWrapper = new TransactionWrapper<>();
+        TransactionWrapper<FlexicoreHashMap> resultWrapper = new TransactionWrapper<>();
 
         TransactionWrapper<FlexicoreHashMap> apiResponseWrapper = sendSoapRequest(theIdentifierType, theIdentifier, strRequestId, Converter.toJson(requestBody), strAction);
 
@@ -1025,15 +1028,17 @@ public class ApStarCBS {
             return resultWrapper;
         }
 
-//        FlexicoreArrayList customerAccounts = apiResponseMap.getFlexicoreArrayList("response_payload");
-        FlexicoreArrayList customerAccounts = apiResponseMap.getFlexicoreArrayList("data");
+        FlexicoreArrayList productsList = apiResponseMap.getFlexicoreArrayList("data");
 
-        if (customerAccounts == null || customerAccounts.isEmpty()) {
+//        System.out.println("productsList:"+productsList);
+
+        if (productsList == null || productsList.isEmpty()) {
             resultWrapper.setHasErrors(true);
             resultWrapper.setStatusCode(HttpsURLConnection.HTTP_NOT_FOUND);
             return resultWrapper;
         }
-        resultWrapper.setData(customerAccounts);
+
+        resultWrapper.setData(apiResponseMap);
         return resultWrapper;
     }
 

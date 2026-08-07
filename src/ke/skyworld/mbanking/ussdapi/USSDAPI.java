@@ -3421,7 +3421,7 @@ public class USSDAPI {
 
             TransactionWrapper<FlexicoreHashMap> loanApplicationWrapper = CBSAPI.loanApplication(strMobileNumber,
                     "MSISDN", strMobileNumber, "IMSI", strSIMID, strProductID,Double.parseDouble(strLoanAmount),
-                    "","","",strOriginatorId,
+                    "","",new FlexicoreArrayList(),strOriginatorId,
                     "USSD", DateTime.getCurrentDateTime("yyyy-MM-dd HH:mm:ss"));
 
             FlexicoreHashMap accountBalanceMap = loanApplicationWrapper.getSingleRecord();
