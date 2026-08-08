@@ -7828,21 +7828,21 @@ public class MAPPAPI {
                 System.out.println("\n\n");
                 System.out.println(XmlUtils.convertNodeToStr(ndRequestMSG));
 
-                /*String strLoanID = configXPath.evaluate("LOAN_TYPE/@PRODUCT_ID", ndRequestMSG).trim();
-                String strAmount = configXPath.evaluate("AMOUNT", ndRequestMSG).trim();*/
-
                 /**
-                 * <PRODUCT_IDS>
-                 *     <PRODUCT_ID>PRDWD34569</PRODUCT_ID>
-                 *     <PRODUCT_ID>PRDWD34568</PRODUCT_ID>
-                 *     <PRODUCT_ID>PRDWD34562</PRODUCT_ID>
-                 * </PRODUCT_IDS>
+                 *
+                 * <AMOUNT/>
+                 * <LOAN_TYPE_ID>709</LOAN_TYPE_ID>
+                 * <MERCHANT_ID>MERchant122324</MERCHANT_ID>
+                 *<ITEMS>
+                 *     <ITEM ITEM_ID="ITEM1" UNIT_PRICE="15000" QUANTITY="2"/>
+                 *     <ITEM ITEM_ID="ITEM2" UNIT_PRICE="5000" QUANTITY="10"/>
+                 *     <ITEM ITEM_ID="ITEM3" UNIT_PRICE="2000" QUANTITY="7"/>
+                 * </ITEMS>
                  * */
 
                 String strLoanID = configXPath.evaluate("LOAN_TYPE_ID", ndRequestMSG).trim();
                 String strAmount = configXPath.evaluate("AMOUNT", ndRequestMSG).trim();
                 String strMerchantId = configXPath.evaluate("MERCHANT_ID", ndRequestMSG).trim();
-//                String strProductId = configXPath.evaluate("PRODUCT_ID", ndRequestMSG).trim();
                 NodeList loanNodes = (NodeList) configXPath.evaluate("ITEMS/ITEM", ndRequestMSG, XPathConstants.NODESET);
 
                 FlexicoreArrayList itemsList = new FlexicoreArrayList();
@@ -7873,13 +7873,6 @@ public class MAPPAPI {
                     itemsList.add(iTemsMap);
                 }
             }
-
-                System.out.println("dlTotalProductsAmount 1: " + dlTotalProductsAmount);
-
-                System.out.println("itemsList:"+itemsList);
-                if(true){
-                    //true
-                }
 
                 //todo: remove
 //                if(strAmount.isEmpty()){
@@ -13407,33 +13400,32 @@ public class MAPPAPI {
         theMAPPRequest.setSequence(0);
         theMAPPRequest.setProductID(0);
         theMAPPRequest.setMAPPType(MAPPConstants.MAPPType.MOBILE_BANKING);
-        theMAPPRequest.setAction("GET_MERCHANT_PRODUCTS");
+        theMAPPRequest.setAction("APPLY_LOAN");
         theMAPPRequest.setVersion("1.00");
         theMAPPRequest.setDateCreated(DateTime.getCurrentDateTime());
         theMAPPRequest.setIntegrityHash(UUID.randomUUID().toString());
 
-       /* String strRequestBody = """
-                <MESSAGES>
-                      <MSG ACTION="MEMBER_EXIT_APPLICATION">
-                            <EXIT_REASON>Poor Services</EXIT_REASON>
-                           <NARRATION>test Data</NARRATION>
-                      </MSG>
-                </MESSAGES>
-                """;*/
-
      /*   String strRequestBody = """
-                <MESSAGES>
-                      <MSG ACTION="GET_INITIAL_MEMBER_INFO"/>
-                </MESSAGES>
-                """;*/
-
-
-        String strRequestBody = """
                 <MESSAGES>
                 <MSG ACTION="GET_MERCHANT_PRODUCTS" PARAMETERS_VERSION="1.20019" PRODUCT_ID="1" SEQ="30" SERVER_ID="100201" SESSION_ID="293516969" SESSION_KEY="f0733750-d88f-41f8-9047-a467b89610c5" TRACE_ID="81b7ebca-ffa0-469b-b867-8a10efdfdde6" TYPE="MOBILE_BANKING">
                 <LOAN_PRODUCT_ID>709</LOAN_PRODUCT_ID>
                 <MERCHANT_ID>0052117</MERCHANT_ID>
                 <PAGINATION PAGE="1" PAGE_COUNT="10"/>
+                </MSG>
+                </MESSAGES>
+                """;*/
+
+        String strRequestBody = """
+                <MESSAGES>
+                <MSG ACTION="APPLY_LOAN" PARAMETERS_VERSION="1.20019" PRODUCT_ID="2" SEQ="30" SERVER_ID="100201" SESSION_ID="293516969" SESSION_KEY="f0733750-d88f-41f8-9047-a467b89610c5" TRACE_ID="81b7ebca-ffa0-469b-b867-8a10efdfdde6" TYPE="MOBILE_BANKING">
+                <AMOUNT/>
+                 <LOAN_TYPE_ID>709</LOAN_TYPE_ID>
+                 <MERCHANT_ID>0052117</MERCHANT_ID>
+                 <ITEMS>
+                     <ITEM ITEM_ID="ITEM1" UNIT_PRICE="15000" QUANTITY="2"/>
+                     <ITEM ITEM_ID="ITEM2" UNIT_PRICE="5000" QUANTITY="10"/>
+                     <ITEM ITEM_ID="ITEM3" UNIT_PRICE="2000" QUANTITY="7"/>
+                 </ITEMS>
                 </MSG>
                 </MESSAGES>
                 """;
