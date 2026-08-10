@@ -2612,8 +2612,10 @@ public class MAPPAPI {
                     strChargeAction = "DEPOSIT";
                     break;
                 }
-
-
+                case "MALI_MALI_CHARGE": {
+                    strChargeAction = "MALI_MALI_CHARGE";
+                    break;
+                }
             }
 
 
@@ -7051,6 +7053,7 @@ public class MAPPAPI {
                         String strProductDescription = flexicoreHashMap.getStringValue("description");
                         String strActualAmount = flexicoreHashMap.getStringValue("actual_amount");
                         String strDiscountedAmount = flexicoreHashMap.getStringValue("discounted_amount");
+                        String strQuantity = flexicoreHashMap.getStringValue("quantity");
                     /*    String pageStr = flexicoreHashMap.getStringValue("current_page");
                         String pageCountStr = flexicoreHashMap.getStringValue("page_size");
                         String strTotalRecords = flexicoreHashMap.getStringValue("total_records");*/
@@ -7061,6 +7064,7 @@ public class MAPPAPI {
                         Element elAmount = doc.createElement("ACTUAL_AMOUNT");
                         Element elDiscountedAmount = doc.createElement("DISCOUNTED_AMOUNT");
                         Element elProductName = doc.createElement("NAME");
+                        Element elQuantity = doc.createElement("QUANTITY");
                       /*  Element elPage= doc.createElement("PAGE");
                         Element elPageCount = doc.createElement("PAGE_COUNT");
                         Element elTotalRecords = doc.createElement("TOTAL_RECORDS");*/
@@ -7075,6 +7079,7 @@ public class MAPPAPI {
                         elAmount.setTextContent(strActualAmount);
                         elDiscountedAmount.setTextContent(strDiscountedAmount);
                         elProductName.setTextContent(strProductName);
+                        elQuantity.setTextContent(strQuantity);
                      /*   elPage.setTextContent(pageStr);
                         elPageCount.setTextContent(pageCountStr);
                         elTotalRecords.setTextContent(strTotalRecords);*/
@@ -7093,6 +7098,168 @@ public class MAPPAPI {
 
                 } else {
                     elData.setTextContent("Sorry! There are no products listed for sale from this seller.");
+                    enResponseStatus = FAILED;
+                }
+            }
+
+            System.out.println("\n\nTHE merchant PRODUCT TYPE REQUEST:::\n\n");
+            System.out.println(XmlUtils.convertNodeToStr(elData));
+
+            generateResponseMSGNode(doc, elData, theMAPPRequest, enResponseAction, enResponseStatus, strCharge, strTitle, enDataType);
+
+            //Response
+            Node ndResponseMSG = doc.getElementsByTagName("MSG").item(0);
+
+            theMAPPResponse = setMAPPResponse(ndResponseMSG, theMAPPRequest);
+
+        } catch (Exception e) {
+            System.err.println(this.getClass().getSimpleName() + "." + new Object() {
+            }.getClass().getEnclosingMethod().getName() + "() ERROR : " + e.getMessage());
+
+            e.printStackTrace();
+        }
+
+        return theMAPPResponse;
+    }
+
+    public MAPPResponse getMembersPurchaseHistory(MAPPRequest theMAPPRequest) {
+
+        MAPPResponse theMAPPResponse = null;
+
+        try {
+
+            System.out.println(this.getClass().getSimpleName() + "." + new Object() {
+            }.getClass().getEnclosingMethod().getName() + "()");
+
+            XPath configXPath = XPathFactory.newInstance().newXPath();
+
+            //Request
+            String strUsername = theMAPPRequest.getUsername();
+
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+
+            // Root element - MSG
+            Document doc = docBuilder.newDocument();
+
+            String strTitle = "Members Purchase History";
+
+            MAPPConstants.ResponsesDataType enDataType = MAPPConstants.ResponsesDataType.TEXT;
+
+            MAPPConstants.ResponseAction enResponseAction = CON;
+            MAPPConstants.ResponseStatus enResponseStatus = MAPPConstants.ResponseStatus.SUCCESS;
+
+            /**
+             * <PAGINATION PAGE="1" PAGE_COUNT="10"/>
+             * <MERCHANT_ID>494999I</MERCHANT_ID>
+             * <STATUS>ALL</STATUS>
+             * */
+
+            //TODO:REMOVE
+            Node ndRequestMSG = theMAPPRequest.getMSG();
+            String strLoanProductID = configXPath.evaluate("LOAN_PRODUCT_ID", ndRequestMSG).trim();
+            String strMerchantId = configXPath.evaluate("MERCHANT_ID", ndRequestMSG).trim();
+            String strStatus = configXPath.evaluate("STATUS", ndRequestMSG).trim();
+            String strPage = configXPath.evaluate("PAGINATION/@PAGE", ndRequestMSG).trim();
+            String strPageCount = configXPath.evaluate("PAGINATION/@PAGE_COUNT", ndRequestMSG).trim();
+
+            //TODO:REMOVE
+
+
+
+//            TransactionWrapper<FlexicoreHashMap> getMembersPurchaseHistoryWrapper = CBSAPI.getMembersPurchaseHistory(strUsername, "MSISDN", strUsername,strMerchantId,strStatus,strPage,strPageCount);
+            TransactionWrapper<FlexicoreHashMap> getMembersPurchaseHistoryWrapper;
+
+            if(strUsername.equals("254714443500")) {
+                getMembersPurchaseHistoryWrapper = CBSAPI.getMembersPurchaseHistory(strUsername, "CUSTOMER_NO", "0000892", strMerchantId, strStatus, strPage, strPageCount);
+            }else {
+                getMembersPurchaseHistoryWrapper = CBSAPI.getMembersPurchaseHistory(strUsername, "MSISDN", strUsername, strMerchantId, strStatus, strPage, strPageCount);
+            }
+
+            FlexicoreHashMap getMembersPurchaseHistoryMap = getMembersPurchaseHistoryWrapper.getSingleRecord();
+
+            String strCharge = "NO";
+
+            Element elData = doc.createElement("DATA");
+
+            if (getMembersPurchaseHistoryWrapper.hasErrors()) {
+                USSDAPIConstants.Condition endSession = getMembersPurchaseHistoryMap.getValue("end_session");
+                String strResponse = getMembersPurchaseHistoryMap.getStringValue("display_message");
+
+                elData.setTextContent(strResponse);
+                enResponseStatus = FAILED;
+
+            } else {
+
+//                System.out.println("getMerchantProductsMap1:"+getMerchantProductsMap);
+                FlexicoreHashMap membersPurchaseHistoryMap = getMembersPurchaseHistoryMap.getFlexicoreHashMap("payload");
+                FlexicoreArrayList membersPurchaseHistoryList = membersPurchaseHistoryMap.getFlexicoreArrayList("data");
+
+//                System.out.println("membersPurchaseHistoryList:"+membersPurchaseHistoryList);
+
+                if (membersPurchaseHistoryList != null && !membersPurchaseHistoryList.isEmpty()) {
+                    enDataType = MAPPConstants.ResponsesDataType.LIST;
+
+                    Element elPurchaseReferences = doc.createElement("PURCHASE_REFERENCES");
+                    elPurchaseReferences.setAttribute("PAGE", Objects.toString(membersPurchaseHistoryMap.get("current_page"), ""));
+                    elPurchaseReferences.setAttribute("PAGE_COUNT", Objects.toString(membersPurchaseHistoryMap.get("page_size"), ""));
+                    elPurchaseReferences.setAttribute("TOTAL_RECORDS", Objects.toString(membersPurchaseHistoryMap.get("total_records"), ""));
+                    elData.appendChild(elPurchaseReferences);
+
+                    for (FlexicoreHashMap purchaseRefHashMap : membersPurchaseHistoryList) {
+                        String strPurchaseReferenceNo = purchaseRefHashMap.getStringValue("entry_no");
+                        String strApplicationDate = purchaseRefHashMap.getStringValue("application_date");
+                        String strPurchaseStatus = purchaseRefHashMap.getStringValue("status");
+                        String strMerchantName = purchaseRefHashMap.getStringValue("merchant_name");
+                        String strSource = purchaseRefHashMap.getStringValue("source");
+                        String strComment = purchaseRefHashMap.getStringValue("comment");
+
+                        Element elPurchaseReference = doc.createElement("PURCHASE_REFERENCE");
+
+                        for (FlexicoreHashMap itemsMap : (FlexicoreArrayList)purchaseRefHashMap.get("items")) {
+                            String strProductId = itemsMap.getStringValue("product_id");
+                            String strProductName = itemsMap.getStringValue("product_name");
+                            String strProductImageURL = itemsMap.getStringValue("image_link");
+                            String strProductDescription = itemsMap.getStringValue("description");
+                            String strAmount = itemsMap.getStringValue("amount");
+                            String strQuantity = itemsMap.getStringValue("quantity");
+
+                            Element elProduct = doc.createElement("PRODUCT");
+                            Element elDescription = doc.createElement("DESCRIPTION");
+                            Element elImageURL = doc.createElement("IMAGE_URL");
+                            Element elAmount = doc.createElement("AMOUNT");
+                            Element elQuantity = doc.createElement("QUANTITY");
+                            Element elProductName = doc.createElement("NAME");
+
+                            byte[] decodedBytes = Base64.getDecoder().decode(strProductDescription);
+                            String decodedTextDescription =  new String(decodedBytes, StandardCharsets.UTF_8).replace("\u0000", "");
+
+                            elDescription.setTextContent(decodedTextDescription);
+                            elImageURL.setTextContent(strProductImageURL);
+                            elAmount.setTextContent(strAmount);
+                            elQuantity.setTextContent(strQuantity);
+                            elProductName.setTextContent(strProductName);
+                            elProductName.setTextContent(strProductName);
+                            elProduct.appendChild(elDescription);
+                            elProduct.appendChild(elImageURL);
+                            elProduct.appendChild(elAmount);
+                            elProduct.appendChild(elQuantity);
+                            elProduct.appendChild(elProductName);
+                            elProduct.setAttribute("ID", strProductId);
+                            elPurchaseReference.appendChild(elProduct);
+                        }
+
+                        elPurchaseReference.setAttribute("REFERENCE_NO", strPurchaseReferenceNo);
+                        elPurchaseReference.setAttribute("APPLICATION_DATE", strApplicationDate);
+                        elPurchaseReference.setAttribute("STATUS", strPurchaseStatus);
+                        elPurchaseReference.setAttribute("MERCHANT_NAME", strMerchantName);
+                        elPurchaseReference.setAttribute("SOURCE", strSource);
+                        elPurchaseReference.setAttribute("COMMENT", strComment);
+                        elPurchaseReferences.appendChild(elPurchaseReference);
+                    }
+
+                } else {
+                    elData.setTextContent("Sorry! No purchase history found.");
                     enResponseStatus = FAILED;
                 }
             }
@@ -11864,7 +12031,7 @@ public class MAPPAPI {
 //            String strOneTImePIN = Utils.generateRandomString(intOTPLength);
             String strOneTImePIN = "";
 
-            if(strUsername.equals("254714443500")) {
+            if(strUsername.equals("254714443500") || strUsername.equals("254769407226")) {
                  strOneTImePIN = "123456";
             }else {
                  strOneTImePIN = Utils.generateRandomString(intOTPLength);
@@ -13400,7 +13567,7 @@ public class MAPPAPI {
         theMAPPRequest.setSequence(0);
         theMAPPRequest.setProductID(0);
         theMAPPRequest.setMAPPType(MAPPConstants.MAPPType.MOBILE_BANKING);
-        theMAPPRequest.setAction("APPLY_LOAN");
+        theMAPPRequest.setAction("GET_CHARGES");
         theMAPPRequest.setVersion("1.00");
         theMAPPRequest.setDateCreated(DateTime.getCurrentDateTime());
         theMAPPRequest.setIntegrityHash(UUID.randomUUID().toString());
@@ -13417,15 +13584,9 @@ public class MAPPAPI {
 
         String strRequestBody = """
                 <MESSAGES>
-                <MSG ACTION="APPLY_LOAN" PARAMETERS_VERSION="1.20019" PRODUCT_ID="2" SEQ="30" SERVER_ID="100201" SESSION_ID="293516969" SESSION_KEY="f0733750-d88f-41f8-9047-a467b89610c5" TRACE_ID="81b7ebca-ffa0-469b-b867-8a10efdfdde6" TYPE="MOBILE_BANKING">
-                <AMOUNT/>
-                 <LOAN_TYPE_ID>709</LOAN_TYPE_ID>
-                 <MERCHANT_ID>0052117</MERCHANT_ID>
-                 <ITEMS>
-                     <ITEM ITEM_ID="ITEM1" UNIT_PRICE="15000" QUANTITY="2"/>
-                     <ITEM ITEM_ID="ITEM2" UNIT_PRICE="5000" QUANTITY="10"/>
-                     <ITEM ITEM_ID="ITEM3" UNIT_PRICE="2000" QUANTITY="7"/>
-                 </ITEMS>
+                <MSG ACTION="GET_CHARGES" PARAMETERS_VERSION="1.20019" PRODUCT_ID="2" SEQ="30" SERVER_ID="100201" SESSION_ID="293516969" SESSION_KEY="f0733750-d88f-41f8-9047-a467b89610c5" TRACE_ID="81b7ebca-ffa0-469b-b867-8a10efdfdde6" TYPE="MOBILE_BANKING">
+                 <CHARGE_ACTION>MALI_MALI_CHARGE</CHARGE_ACTION>
+                 <AMOUNT>1000</AMOUNT>
                 </MSG>
                 </MESSAGES>
                 """;

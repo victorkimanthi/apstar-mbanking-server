@@ -6297,6 +6297,65 @@ public class CBSAPI {
         return resultWrapper;
     }
 
+    public static TransactionWrapper<FlexicoreHashMap> getMembersPurchaseHistory(String strRequestingMobileNumber,
+                                                                           String theIdentifierType,
+                                                                           String theIdentifier,
+                                                                           String strMerchantId,
+                                                                           String strStatus,
+                                                                           String strPage,
+                                                                           String strPageCount) {
+
+        TransactionWrapper<FlexicoreHashMap> resultWrapper = new TransactionWrapper<>();
+
+        try {
+            TransactionWrapper<FlexicoreHashMap> membersPurchaseHistoryWrapper = ApStarCBS.getMembersPurchaseHistory(theIdentifierType, theIdentifier,strMerchantId,strStatus,strPage,strPageCount);
+
+            if (membersPurchaseHistoryWrapper.hasErrors() && membersPurchaseHistoryWrapper.getStatusCode() != HttpsURLConnection.HTTP_NOT_FOUND) {
+                System.err.println(strRequestingMobileNumber + " => ApStarCBS.getLoanTypes() - " + membersPurchaseHistoryWrapper.getErrors() + "\n" + membersPurchaseHistoryWrapper.getMessages());
+
+                resultWrapper.setStatusCode(HttpsURLConnection.HTTP_INTERNAL_ERROR);
+                resultWrapper.setHasErrors(true);
+                resultWrapper.addError(membersPurchaseHistoryWrapper.getErrors());
+                resultWrapper.setData(new FlexicoreHashMap()
+                        .putValue("end_session", USSDAPIConstants.Condition.YES)
+                        .putValue("cbs_api_return_val", USSDAPIConstants.StandardReturnVal.ERROR)
+                        .putValue("display_message", "Sorry, an error occurred while processing your request. Please try again later." + getTrailerMessage()));
+
+                return resultWrapper;
+            }
+
+            if (membersPurchaseHistoryWrapper.getStatusCode() == HttpsURLConnection.HTTP_NOT_FOUND) {
+                resultWrapper.setHasErrors(true);
+                resultWrapper.addError("Sorry! No purchase history found.");
+                resultWrapper.setData(new FlexicoreHashMap()
+                        .putValue("end_session", USSDAPIConstants.Condition.YES)
+                        .putValue("cbs_api_return_val", USSDAPIConstants.StandardReturnVal.ERROR)
+                        .putValue("display_message", "Sorry! No purchase history found."));
+
+                return resultWrapper;
+            }
+
+            resultWrapper.setData(new FlexicoreHashMap()
+                            .putValue("end_session", USSDAPIConstants.Condition.NO)
+                            .putValue("cbs_api_return_val", USSDAPIConstants.StandardReturnVal.SUCCESS)
+                            .putValue("payload", membersPurchaseHistoryWrapper.getData())
+//                    .putValue("pagination", merchantProductsWrapper.getSingleRecord().getFlexicoreHashMap("pagination"))
+            );
+
+            return resultWrapper;
+        } catch (Exception e) {
+            System.err.println(strRequestingMobileNumber + " => CBSAPI.getMembersPurchaseHistory: " + e.getMessage());
+            e.printStackTrace();
+            resultWrapper.setHasErrors(true);
+            resultWrapper.addError(e.getMessage());
+            resultWrapper.setData(new FlexicoreHashMap()
+                    .putValue("end_session", USSDAPIConstants.Condition.YES)
+                    .putValue("cbs_api_return_val", USSDAPIConstants.StandardReturnVal.ERROR)
+                    .putValue("display_message", "Sorry, an error occurred while processing your request. Please try again later."));
+        }
+        return resultWrapper;
+    }
+
     public static double dailyTotalMoneyOut(String theSourceIdentifier, String limitType) {
 
         try {
