@@ -6637,19 +6637,22 @@ public class MAPPAPI {
 
             //Request
             String strUsername = theMAPPRequest.getUsername();
-
-            TransactionWrapper<FlexicoreHashMap> getMerchantsWrapper = CBSAPI.getMerchants(strUsername, "MSISDN", strUsername);
-            FlexicoreHashMap getMerchantsMap = getMerchantsWrapper.getSingleRecord();
-
-            System.out.println("getMerchantsMap:"+getMerchantsMap);
+            XPath configXPath = XPathFactory.newInstance().newXPath();
 
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 
             // Root element - MSG
             Document doc = docBuilder.newDocument();
+            Node ndRequestMSG = theMAPPRequest.getMSG();
 
             String strTitle = "Merchants";
+            String strPage = configXPath.evaluate("PAGINATION/@PAGE", ndRequestMSG).trim();
+            String strPageCount = configXPath.evaluate("PAGINATION/@PAGE_COUNT", ndRequestMSG).trim();
+
+            TransactionWrapper<FlexicoreHashMap> getMerchantsWrapper = CBSAPI.getMerchants(strUsername, "MSISDN", strUsername,strPage,strPageCount);
+            FlexicoreHashMap getMerchantsMap = getMerchantsWrapper.getSingleRecord();
+            System.out.println("getMerchantsMap:"+getMerchantsMap);
 
             MAPPConstants.ResponsesDataType enDataType = MAPPConstants.ResponsesDataType.TEXT;
 
@@ -6668,23 +6671,33 @@ public class MAPPAPI {
 
             } else {
 
-                FlexicoreArrayList merchantsList = getMerchantsMap.getFlexicoreArrayList("payload");
+                FlexicoreHashMap merchantsMap = getMerchantsMap.getFlexicoreHashMap("payload");
+                FlexicoreArrayList merchantsList = merchantsMap.getFlexicoreArrayList("data");
                 System.out.println("merchantsList:"+merchantsList);
 
                 if (merchantsList != null && !merchantsList.isEmpty()) {
                     enDataType = MAPPConstants.ResponsesDataType.LIST;
 
-                    Element elLoans = doc.createElement("MERCHANTS");
-                    elData.appendChild(elLoans);
+                    Element elMerchants = doc.createElement("MERCHANTS");
+                    elMerchants.setAttribute("PAGE",merchantsMap.getStringValue("current_page"));
+                    elMerchants.setAttribute("PAGE_COUNT",merchantsMap.getStringValue("page_size"));
+                    elMerchants.setAttribute("TOTAL_RECORDS",merchantsMap.getStringValue("total_records"));
+                    elData.appendChild(elMerchants);
 
                     for (FlexicoreHashMap flexicoreHashMap : merchantsList) {
                         String strMerchantId = flexicoreHashMap.getStringValue("merchant_id");
                         String strMerchantName = flexicoreHashMap.getStringValue("merchant");
+                        String strMerchantPhoto = flexicoreHashMap.getStringValue("merchant_photo");
 
-                        Element elLoan = doc.createElement("MERCHANT");
-                        elLoan.setTextContent(strMerchantName);
-                        elLoan.setAttribute("ID", strMerchantId);
-                        elLoans.appendChild(elLoan);
+                        Element elMerchant = doc.createElement("MERCHANT");
+                        Element elMerchantName = doc.createElement("NAME");
+                        Element elMerchantPhoto = doc.createElement("PHOTO");
+                        elMerchantName.setTextContent(strMerchantName);
+                        elMerchantPhoto.setTextContent(strMerchantPhoto);
+                        elMerchant.setAttribute("ID", strMerchantId);
+                        elMerchant.appendChild(elMerchantName);
+                        elMerchant.appendChild(elMerchantPhoto);
+                        elMerchants.appendChild(elMerchant);
                     }
 
                 } else {
@@ -13567,7 +13580,7 @@ public class MAPPAPI {
         theMAPPRequest.setSequence(0);
         theMAPPRequest.setProductID(0);
         theMAPPRequest.setMAPPType(MAPPConstants.MAPPType.MOBILE_BANKING);
-        theMAPPRequest.setAction("GET_CHARGES");
+        theMAPPRequest.setAction("GET_MERCHANTS");
         theMAPPRequest.setVersion("1.00");
         theMAPPRequest.setDateCreated(DateTime.getCurrentDateTime());
         theMAPPRequest.setIntegrityHash(UUID.randomUUID().toString());
@@ -13584,9 +13597,8 @@ public class MAPPAPI {
 
         String strRequestBody = """
                 <MESSAGES>
-                <MSG ACTION="GET_CHARGES" PARAMETERS_VERSION="1.20019" PRODUCT_ID="2" SEQ="30" SERVER_ID="100201" SESSION_ID="293516969" SESSION_KEY="f0733750-d88f-41f8-9047-a467b89610c5" TRACE_ID="81b7ebca-ffa0-469b-b867-8a10efdfdde6" TYPE="MOBILE_BANKING">
-                 <CHARGE_ACTION>MALI_MALI_CHARGE</CHARGE_ACTION>
-                 <AMOUNT>1000</AMOUNT>
+                <MSG ACTION="GET_ALL_MERCHANTS" PARAMETERS_VERSION="1.20019" PRODUCT_ID="2" SEQ="30" SERVER_ID="100201" SESSION_ID="293516969" SESSION_KEY="f0733750-d88f-41f8-9047-a467b89610c5" TRACE_ID="81b7ebca-ffa0-469b-b867-8a10efdfdde6" TYPE="MOBILE_BANKING">
+                 <PAGINATION PAGE="1" PAGE_COUNT="10"/>
                 </MSG>
                 </MESSAGES>
                 """;

@@ -937,7 +937,8 @@ public class ApStarCBS {
         return resultWrapper;
     }
 
-    public static TransactionWrapper<FlexicoreArrayList> getMerchants(String theIdentifierType, String theIdentifier) {
+//    public static TransactionWrapper<FlexicoreArrayList> getMerchants(String theIdentifierType, String theIdentifier,String strPage,String strPageCount) {
+    public static TransactionWrapper<FlexicoreHashMap> getMerchants(String theIdentifierType, String theIdentifier,String strPage,String strPageCount) {
 
         String strRequestId = UUID.randomUUID().toString();
 
@@ -952,9 +953,11 @@ public class ApStarCBS {
                 .putValue("payload", new FlexicoreHashMap()
                         .putValue("identifier_type", theIdentifierType)
                         .putValue("identifier", theIdentifier)
+                        .putValue("page", strPage)
+                        .putValue("page_count", strPageCount)
                 );
 
-        TransactionWrapper<FlexicoreArrayList> resultWrapper = new TransactionWrapper<>();
+        TransactionWrapper<FlexicoreHashMap> resultWrapper = new TransactionWrapper<>();
 
         TransactionWrapper<FlexicoreHashMap> apiResponseWrapper = sendSoapRequest(theIdentifierType, theIdentifier, strRequestId, Converter.toJson(requestBody), strAction);
 
@@ -975,14 +978,14 @@ public class ApStarCBS {
         }
 
 //        FlexicoreArrayList customerAccounts = apiResponseMap.getFlexicoreArrayList("response_payload");
-        FlexicoreArrayList customerAccounts = apiResponseMap.getFlexicoreArrayList("data");
+        FlexicoreArrayList apiResponseList = apiResponseMap.getFlexicoreArrayList("data");
 
-        if (customerAccounts == null || customerAccounts.isEmpty()) {
+        if (apiResponseList == null || apiResponseList.isEmpty()) {
             resultWrapper.setHasErrors(true);
             resultWrapper.setStatusCode(HttpsURLConnection.HTTP_NOT_FOUND);
             return resultWrapper;
         }
-        resultWrapper.setData(customerAccounts);
+        resultWrapper.setData(apiResponseMap);
         return resultWrapper;
     }
 

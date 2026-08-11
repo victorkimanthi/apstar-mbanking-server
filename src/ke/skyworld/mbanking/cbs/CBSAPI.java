@@ -6186,12 +6186,15 @@ public class CBSAPI {
 
     public static TransactionWrapper<FlexicoreHashMap> getMerchants(String strRequestingMobileNumber,
                                                                     String theIdentifierType,
-                                                                    String theIdentifier) {
+                                                                    String theIdentifier,
+                                                                    String strPage,
+                                                                    String strPageCount
+    ) {
 
         TransactionWrapper<FlexicoreHashMap> resultWrapper = new TransactionWrapper<>();
 
         try {
-            TransactionWrapper<FlexicoreArrayList> merchantsListWrapper = ApStarCBS.getMerchants(theIdentifierType, theIdentifier);
+            TransactionWrapper<FlexicoreHashMap> merchantsListWrapper = ApStarCBS.getMerchants(theIdentifierType, theIdentifier,strPage,strPageCount);
 
             if (merchantsListWrapper.hasErrors() && merchantsListWrapper.getStatusCode() != HttpsURLConnection.HTTP_NOT_FOUND) {
                 System.err.println(strRequestingMobileNumber + " => ApStarCBS.getLoanTypes() - " + merchantsListWrapper.getErrors() + "\n" + merchantsListWrapper.getMessages());
