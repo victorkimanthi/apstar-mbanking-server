@@ -6688,12 +6688,19 @@ public class MAPPAPI {
                         String strMerchantId = flexicoreHashMap.getStringValue("merchant_id");
                         String strMerchantName = flexicoreHashMap.getStringValue("merchant");
                         String strMerchantPhoto = flexicoreHashMap.getStringValue("merchant_photo");
+                        String strMerchantPhoneNo = flexicoreHashMap.getStringValue("merchant_phone_no");
+                        String strMerchantLocation = flexicoreHashMap.getStringValue("location");
 
                         Element elMerchant = doc.createElement("MERCHANT");
                         Element elMerchantName = doc.createElement("NAME");
                         Element elMerchantPhoto = doc.createElement("PHOTO");
+                        Element elPhoneNumber = doc.createElement("PHONE_NUMBER");
+                        Element elLocation = doc.createElement("LOCATION");
+
                         elMerchantName.setTextContent(strMerchantName);
                         elMerchantPhoto.setTextContent(strMerchantPhoto);
+                        elPhoneNumber.setTextContent(strMerchantPhoneNo);
+                        elLocation.setTextContent(strMerchantLocation);
                         elMerchant.setAttribute("ID", strMerchantId);
                         elMerchant.appendChild(elMerchantName);
                         elMerchant.appendChild(elMerchantPhoto);
@@ -7102,6 +7109,7 @@ public class MAPPAPI {
                         elProduct.appendChild(elAmount);
                         elProduct.appendChild(elDiscountedAmount);
                         elProduct.appendChild(elProductName);
+                        elProduct.appendChild(elQuantity);
                       /*  elProduct.appendChild(elPage);
                         elProduct.appendChild(elPageCount);
                         elProduct.appendChild(elTotalRecords);*/
