@@ -6704,6 +6704,8 @@ public class MAPPAPI {
                         elMerchant.setAttribute("ID", strMerchantId);
                         elMerchant.appendChild(elMerchantName);
                         elMerchant.appendChild(elMerchantPhoto);
+                        elMerchant.appendChild(elPhoneNumber);
+                        elMerchant.appendChild(elLocation);
                         elMerchants.appendChild(elMerchant);
                     }
 
@@ -7188,14 +7190,14 @@ public class MAPPAPI {
 
 
 
-//            TransactionWrapper<FlexicoreHashMap> getMembersPurchaseHistoryWrapper = CBSAPI.getMembersPurchaseHistory(strUsername, "MSISDN", strUsername,strMerchantId,strStatus,strPage,strPageCount);
-            TransactionWrapper<FlexicoreHashMap> getMembersPurchaseHistoryWrapper;
+            TransactionWrapper<FlexicoreHashMap> getMembersPurchaseHistoryWrapper = CBSAPI.getMembersPurchaseHistory(strUsername, "MSISDN", strUsername,strMerchantId,strStatus,strPage,strPageCount);
+//            TransactionWrapper<FlexicoreHashMap> getMembersPurchaseHistoryWrapper;
 
-            if(strUsername.equals("254714443500")) {
-                getMembersPurchaseHistoryWrapper = CBSAPI.getMembersPurchaseHistory(strUsername, "CUSTOMER_NO", "0000892", strMerchantId, strStatus, strPage, strPageCount);
-            }else {
-                getMembersPurchaseHistoryWrapper = CBSAPI.getMembersPurchaseHistory(strUsername, "MSISDN", strUsername, strMerchantId, strStatus, strPage, strPageCount);
-            }
+//            if(strUsername.equals("254714443500")) {
+//                getMembersPurchaseHistoryWrapper = CBSAPI.getMembersPurchaseHistory(strUsername, "CUSTOMER_NO", "0000892", strMerchantId, strStatus, strPage, strPageCount);
+//            }else {
+//                getMembersPurchaseHistoryWrapper = CBSAPI.getMembersPurchaseHistory(strUsername, "MSISDN", strUsername, strMerchantId, strStatus, strPage, strPageCount);
+//            }
 
             FlexicoreHashMap getMembersPurchaseHistoryMap = getMembersPurchaseHistoryWrapper.getSingleRecord();
 
