@@ -6332,7 +6332,7 @@ public class CBSAPI {
                 resultWrapper.addError("Sorry! No purchase history found.");
                 resultWrapper.setData(new FlexicoreHashMap()
                         .putValue("end_session", USSDAPIConstants.Condition.YES)
-                        .putValue("cbs_api_return_val", USSDAPIConstants.StandardReturnVal.ERROR)
+                        .putValue("cbs_api_return_val", USSDAPIConstants.StandardReturnVal.NOT_FOUND)
                         .putValue("display_message", "Sorry! No purchase history found."));
 
                 return resultWrapper;
@@ -6342,7 +6342,6 @@ public class CBSAPI {
                             .putValue("end_session", USSDAPIConstants.Condition.NO)
                             .putValue("cbs_api_return_val", USSDAPIConstants.StandardReturnVal.SUCCESS)
                             .putValue("payload", membersPurchaseHistoryWrapper.getData())
-//                    .putValue("pagination", merchantProductsWrapper.getSingleRecord().getFlexicoreHashMap("pagination"))
             );
 
             return resultWrapper;
