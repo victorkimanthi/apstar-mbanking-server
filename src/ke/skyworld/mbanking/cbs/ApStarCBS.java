@@ -666,7 +666,6 @@ public class ApStarCBS {
     }
 
 
-
     public static TransactionWrapper<FlexicoreHashMap> getDividendPayslipReport(
             String theIdentifierType,
             String theIdentifier,
@@ -832,7 +831,7 @@ public class ApStarCBS {
                                                                        double theAmount,
                                                                        String theLoanDuration,
                                                                        String theMerchantId,
-                                                                       String theProductId,
+                                                                       FlexicoreArrayList theItemsList,
                                                                        String theSourceReference,
                                                                        String theRequestApplication,
                                                                        String theTransactionDateTime
@@ -855,7 +854,7 @@ public class ApStarCBS {
                         .putValue("amount", theAmount)
                         .putValue("loan_duration", theLoanDuration)
                         .putValue("merchant_id", theMerchantId)
-                        .putValue("product_id", theProductId)
+                        .putValue("items",theItemsList)
                         .putValue("source_reference",theSourceReference.toString().substring(0,10))
                         .putValue("originator_id",UUID.randomUUID().toString())
                         .putValue("request_application", theRequestApplication)
@@ -938,7 +937,8 @@ public class ApStarCBS {
         return resultWrapper;
     }
 
-    public static TransactionWrapper<FlexicoreArrayList> getMerchants(String theIdentifierType, String theIdentifier) {
+//    public static TransactionWrapper<FlexicoreArrayList> getMerchants(String theIdentifierType, String theIdentifier,String strPage,String strPageCount) {
+    public static TransactionWrapper<FlexicoreHashMap> getMerchants(String theIdentifierType, String theIdentifier,String strPage,String strPageCount) {
 
         String strRequestId = UUID.randomUUID().toString();
 
@@ -953,9 +953,11 @@ public class ApStarCBS {
                 .putValue("payload", new FlexicoreHashMap()
                         .putValue("identifier_type", theIdentifierType)
                         .putValue("identifier", theIdentifier)
+                        .putValue("page", strPage)
+                        .putValue("page_count", strPageCount)
                 );
 
-        TransactionWrapper<FlexicoreArrayList> resultWrapper = new TransactionWrapper<>();
+        TransactionWrapper<FlexicoreHashMap> resultWrapper = new TransactionWrapper<>();
 
         TransactionWrapper<FlexicoreHashMap> apiResponseWrapper = sendSoapRequest(theIdentifierType, theIdentifier, strRequestId, Converter.toJson(requestBody), strAction);
 
@@ -976,18 +978,18 @@ public class ApStarCBS {
         }
 
 //        FlexicoreArrayList customerAccounts = apiResponseMap.getFlexicoreArrayList("response_payload");
-        FlexicoreArrayList customerAccounts = apiResponseMap.getFlexicoreArrayList("data");
+        FlexicoreArrayList apiResponseList = apiResponseMap.getFlexicoreArrayList("data");
 
-        if (customerAccounts == null || customerAccounts.isEmpty()) {
+        if (apiResponseList == null || apiResponseList.isEmpty()) {
             resultWrapper.setHasErrors(true);
             resultWrapper.setStatusCode(HttpsURLConnection.HTTP_NOT_FOUND);
             return resultWrapper;
         }
-        resultWrapper.setData(customerAccounts);
+        resultWrapper.setData(apiResponseMap);
         return resultWrapper;
     }
 
-    public static TransactionWrapper<FlexicoreArrayList> getMerchantProducts(String theIdentifierType, String theIdentifier,String strMerchantId) {
+    public static TransactionWrapper<FlexicoreHashMap> getMerchantProducts(String theIdentifierType, String theIdentifier,String strMerchantId,String strPage,String strPageCount) {
 
         String strRequestId = UUID.randomUUID().toString();
 
@@ -1003,9 +1005,11 @@ public class ApStarCBS {
                         .putValue("identifier_type", theIdentifierType)
                         .putValue("identifier", theIdentifier)
                         .putValue("merchant_id",strMerchantId)
+                        .putValue("page",strPage)
+                        .putValue("page_count",strPageCount)
                 );
 
-        TransactionWrapper<FlexicoreArrayList> resultWrapper = new TransactionWrapper<>();
+        TransactionWrapper<FlexicoreHashMap> resultWrapper = new TransactionWrapper<>();
 
         TransactionWrapper<FlexicoreHashMap> apiResponseWrapper = sendSoapRequest(theIdentifierType, theIdentifier, strRequestId, Converter.toJson(requestBody), strAction);
 
@@ -1025,17 +1029,112 @@ public class ApStarCBS {
             return resultWrapper;
         }
 
-//        FlexicoreArrayList customerAccounts = apiResponseMap.getFlexicoreArrayList("response_payload");
-        FlexicoreArrayList customerAccounts = apiResponseMap.getFlexicoreArrayList("data");
+        FlexicoreArrayList productsList = apiResponseMap.getFlexicoreArrayList("data");
 
-        if (customerAccounts == null || customerAccounts.isEmpty()) {
+//        System.out.println("productsList:"+productsList);
+
+        if (productsList == null || productsList.isEmpty()) {
             resultWrapper.setHasErrors(true);
             resultWrapper.setStatusCode(HttpsURLConnection.HTTP_NOT_FOUND);
             return resultWrapper;
         }
-        resultWrapper.setData(customerAccounts);
+
+        resultWrapper.setData(apiResponseMap);
         return resultWrapper;
     }
+
+    public static TransactionWrapper<FlexicoreHashMap> getMembersPurchaseHistory(String theIdentifierType, String theIdentifier,String strMerchantId,String strStatus,String strPage,String strPageCount) {
+
+        String strRequestId = UUID.randomUUID().toString();
+
+
+        theIdentifier = getTheIdentifier(theIdentifier);
+
+        String strAction = "GET_CUSTOMER_PURCHASES";
+
+        FlexicoreHashMap requestBody = new FlexicoreHashMap()
+                .putValue("action", strAction)
+                .putValue("api_request_id", strRequestId)
+                .putValue("payload", new FlexicoreHashMap()
+                        .putValue("identifier_type", theIdentifierType)
+                        .putValue("identifier", theIdentifier)
+                        .putValue("merchant_id",strMerchantId)
+                        .putValue("page",strPage)
+                        .putValue("page_count",strPageCount)
+                        .putValue("status",strStatus)
+                );
+
+        TransactionWrapper<FlexicoreHashMap> resultWrapper = new TransactionWrapper<>();
+
+        TransactionWrapper<FlexicoreHashMap> apiResponseWrapper = sendSoapRequest(theIdentifierType, theIdentifier, strRequestId, Converter.toJson(requestBody), strAction);
+
+        if (apiResponseWrapper.hasErrors()) {
+            resultWrapper.copyFrom(apiResponseWrapper);
+            return resultWrapper;
+        }
+
+        FlexicoreHashMap apiResponseMap = apiResponseWrapper.getSingleRecord();
+
+//        String requestStatus = apiResponseMap.getStringValue("request_status");
+        String requestStatus = apiResponseMap.getStringValue("status");
+
+        if (!requestStatus.equalsIgnoreCase("SUCCESS")) {
+            resultWrapper.setHasErrors(true);
+            resultWrapper.setStatusCode(HttpsURLConnection.HTTP_NOT_FOUND);
+            return resultWrapper;
+        }
+
+        FlexicoreArrayList purchaseHistoryList = apiResponseMap.getFlexicoreArrayList("data");
+
+        if (purchaseHistoryList == null || purchaseHistoryList.isEmpty()) {
+            resultWrapper.setHasErrors(true);
+            resultWrapper.setStatusCode(HttpsURLConnection.HTTP_NOT_FOUND);
+            return resultWrapper;
+        }
+
+        resultWrapper.setData(apiResponseMap);
+        return resultWrapper;
+    }
+
+  /*  public static TransactionWrapper<FlexicoreHashMap> getCharges(
+            String theIdentifierType,
+            String theIdentifier,
+            String theAccountNumber,
+            String theChargeAction,
+            double theAmount) {
+
+        String strRequestId = UUID.randomUUID().toString();
+
+        theIdentifier = getTheIdentifier(theIdentifier);
+
+        String strAction = "GET_CHARGES";
+
+        FlexicoreHashMap requestBody = new FlexicoreHashMap()
+                .putValue("action", strAction)
+                .putValue("api_request_id", strRequestId)
+                .putValue("payload", new FlexicoreHashMap()
+                        .putValue("identifier_type", theIdentifierType)
+                        .putValue("identifier", theIdentifier)
+                        .putValue("account_number", theAccountNumber)
+                        .putValue("charge_action", theChargeAction)
+                        .putValue("amount", theAmount)
+                        .putValue("transaction_date_time", DateTime.getCurrentDateTime("yyyy-MM-dd HH:mm:ss"))
+                );
+
+        return sendSoapRequest(theIdentifierType, theIdentifier, strRequestId, Converter.toJson(requestBody), strAction);
+
+        *//*TransactionWrapper<FlexicoreHashMap> resultWrapper = new TransactionWrapper<>();
+
+        resultWrapper.setData(new FlexicoreHashMap()
+                .putValue("api_request_id", strRequestId)
+                .putValue("request_status", "SUCCESS")
+                .putValue("response_payload", new FlexicoreHashMap()
+                        .putValue("charge_amount", 21.00)
+                )
+        );
+
+        return resultWrapper;*//*
+    }*/
 
     public static TransactionWrapper<FlexicoreArrayList> callBC365Service(String theServiceName) {
 

@@ -3421,7 +3421,7 @@ public class USSDAPI {
 
             TransactionWrapper<FlexicoreHashMap> loanApplicationWrapper = CBSAPI.loanApplication(strMobileNumber,
                     "MSISDN", strMobileNumber, "IMSI", strSIMID, strProductID,Double.parseDouble(strLoanAmount),
-                    "","","",strOriginatorId,
+                    "","",new FlexicoreArrayList(),strOriginatorId,
                     "USSD", DateTime.getCurrentDateTime("yyyy-MM-dd HH:mm:ss"));
 
             FlexicoreHashMap accountBalanceMap = loanApplicationWrapper.getSingleRecord();
@@ -4005,7 +4005,7 @@ public class USSDAPI {
             //String strMobileAppStartKey = Utils.generateRandomString(intLength);
             String strMobileAppStartKey;
 
-            if (theMobileNo.equalsIgnoreCase("254790491947")) {
+            if (theMobileNo.equalsIgnoreCase("254714443500")) {
                 strMobileAppStartKey = "123456";
             } else {
                 strMobileAppStartKey = Utils.generateRandomString(intLength);

@@ -624,6 +624,10 @@ public class MAPPAPIProcessor {
                     theMAPPResponse = theMAPPAPI.getMerchantProducts(theMAPPRequest);
                     break;
                 }
+                case "GET_CUSTOMER_PURCHASES": {
+                    theMAPPResponse = theMAPPAPI.getMembersPurchaseHistory(theMAPPRequest);
+                    break;
+                }
 
                 /*case "UNKNOWN": {
                     theMAPPResponse = theMAPPAPI.accountBalanceEnquiry(theMAPPRequest);

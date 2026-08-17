@@ -63,10 +63,9 @@ public class MBankingAPI {
 
             ApStarCBSParams.initialize();
             NavisionAgencyConnectionManager.params = NavisionUtils.getAgencyBankingNavisionLocalParameters("live_agency_banking_navision_conf.xml");
-
-//              System.out.println("simulate");
-//                MAPPAPI.MAPPRequestSimulation();
-//             System.out.println("simulate 2");
+              System.out.println("simulate");
+              MAPPAPI.MAPPRequestSimulation();
+           System.out.println("simulate 2");
 
 
          /*   ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
